@@ -1,3 +1,19 @@
+/*
+Copyright 2022 Nokia.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -7,7 +23,7 @@ import (
 	"time"
 
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
-	"github.com/fnrunner/fnruntime/internal/podproxy"
+	"github.com/fnrunner/fnruntime/internal/fnproxy"
 	"github.com/pkg/profile"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/kubernetes"
@@ -18,8 +34,8 @@ import (
 )
 
 const (
-	fnImage  = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-fabric-image"
-	svcImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-ipam-service-image:latest"
+	fnImage  = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-fabric-image:latest"
+	svcImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/ipam-injector-service-image:latest"
 )
 
 func main() {
@@ -74,10 +90,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := podproxy.New(&podproxy.Config{
+	fnProxy := fnproxy.New(&fnproxy.Config{
 		Clientset: c,
-	}).CreatePod(ctx, fnrunv1alpha1.Image{Name: svcImage, Kind: fnrunv1alpha1.ImageKindService}); err != nil {
-		l.Error(err, "unable to create pod")
+	})
+
+	if err := fnProxy.CreatePod(ctx, fnrunv1alpha1.Image{
+		Name: svcImage,
+		Kind: fnrunv1alpha1.ImageKindService,
+	}); err != nil {
+		l.Error(err, "unable to create svc pod")
+		os.Exit(1)
+	}
+
+	if err := fnProxy.CreatePod(ctx, fnrunv1alpha1.Image{
+		Name: fnImage,
+		Kind: fnrunv1alpha1.ImageKindFunction,
+	}); err != nil {
+		l.Error(err, "unable to create fn pod")
 		os.Exit(1)
 	}
 

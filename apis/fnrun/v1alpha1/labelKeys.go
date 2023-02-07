@@ -26,7 +26,7 @@ const (
 	VolumeName            = VolumeMountPath
 	VolumeMountPath       = "fnwrapper-server-tools"
 	WrapperServerBin      = "fnwrapper-server"
-	DefaultFnWrapperImage = "tbd"
+	DefaultFnWrapperImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fnwrapper-image:latest"
 	FnGRPCServerPort      = 9446
 	// env
 	EnvFnWrapperImage = "FN-WRAPPER-IMAGE"
