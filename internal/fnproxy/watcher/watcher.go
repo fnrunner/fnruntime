@@ -106,14 +106,14 @@ WATCH:
 			podIP, err := r.Query(ctx)
 			if err != nil {
 				r.l.Error(err, "cannot query podIP")
-                // TODO add recreate POD + SVC
-                // callback
+				// TODO add recreate POD + SVC
+				// callback
 				r.deleteClientFn(r.image)
 				goto WATCH
 			}
 			if podIP == "" {
-                // callback
-                r.deleteClientFn(r.image)
+				// callback
+				r.deleteClientFn(r.image)
 			} else {
 				//  callback
 				r.createClientFn(r.image, podIP)

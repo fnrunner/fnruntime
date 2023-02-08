@@ -14,21 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package clients
 
-const (
-	//labels
-	FunctionLabelKey = "fnrun.io/image"
-
-	// pod spec
-	InitContainerName     = "copy-fnwrapper-server"
-	FnContainerName       = "function"
-	VolumeName            = VolumeMountPath
-	VolumeMountPath       = "fnwrapper-server-tools"
-	WrapperServerBin      = "fnwrapper-server"
-	DefaultFnWrapperImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fnwrapper-image:latest"
-	FnGRPCServerPort      = 9446
-	FnProxyGRPCServerPort = 9445
-	// env
-	EnvFnWrapperImage = "FN-WRAPPER-IMAGE"
+import (
+	"github.com/fnrunner/fnproto/pkg/executor/execclient"
+	"github.com/fnrunner/fnproto/pkg/service/svcclient"
 )
+
+type Clients struct {
+	Execclient execclient.Client
+	Svcclient  svcclient.Client
+}

@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Nokia.
+Copyright 2023 Nokia.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package exechandler
 
-const (
-	//labels
-	FunctionLabelKey = "fnrun.io/image"
+import "errors"
 
-	// pod spec
-	InitContainerName     = "copy-fnwrapper-server"
-	FnContainerName       = "function"
-	VolumeName            = VolumeMountPath
-	VolumeMountPath       = "fnwrapper-server-tools"
-	WrapperServerBin      = "fnwrapper-server"
-	DefaultFnWrapperImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fnwrapper-image:latest"
-	FnGRPCServerPort      = 9446
-	FnProxyGRPCServerPort = 9445
-	// env
-	EnvFnWrapperImage = "FN-WRAPPER-IMAGE"
+var (
+	ErrClientNotready = errors.New("client not ready")
 )

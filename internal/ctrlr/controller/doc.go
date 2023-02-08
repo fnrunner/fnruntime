@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Nokia.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+/*
+Package controller provides types and functions for building Controllers.  Controllers implement Kubernetes APIs.
 
-const (
-	//labels
-	FunctionLabelKey = "fnrun.io/image"
+# Creation
 
-	// pod spec
-	InitContainerName     = "copy-fnwrapper-server"
-	FnContainerName       = "function"
-	VolumeName            = VolumeMountPath
-	VolumeMountPath       = "fnwrapper-server-tools"
-	WrapperServerBin      = "fnwrapper-server"
-	DefaultFnWrapperImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fnwrapper-image:latest"
-	FnGRPCServerPort      = 9446
-	FnProxyGRPCServerPort = 9445
-	// env
-	EnvFnWrapperImage = "FN-WRAPPER-IMAGE"
-)
+To create a new Controller, first create a manager.Manager and pass it to the controller.New function.
+The Controller MUST be started by calling Manager.Start.
+*/
+package controller

@@ -1,0 +1,121 @@
+apiVersion: config.fnrun.io/v1
+kind: ControllerConfig
+metadata:
+  name: topoController
+  namespace: default
+spec:
+  for: 
+    topoDef: 
+      resource: 
+        apiVersion: topo.yndd.io/v1alpha1
+        kind: Definition
+      applyPipelineRef: forApplyPipeline
+      deletePipelineRef: forDeletePipeline      
+  pipelines:
+    - name: watchTemplateApplyPipeline
+      vars:
+        watchAllDefinitions:
+          type: query
+          input: 
+            resource:
+              apiVersion: topo.yndd.io/v1alpha1
+              kind: Definition
+    - name: forDeletePipeline
+    - name: forApplyPipeline
+      vars:
+        masterTemplateNames:
+          type: jq
+          input: 
+            expression: $topoDef | .spec.properties.templates | select((. | length) > 0) | .[].templateRef.name
+        conditionedTemplateBlock:
+          type: block
+          condition:
+            expression: $masterTemplateNames | length != 0
+          block:
+            allTemplates:
+              type: query
+              input: 
+                resource: 
+                  apiVersion: topo.yndd.io/v1alpha1
+                  kind: Template
+            masterTemplates:
+              type: jq
+              input:
+                expression: '$masterTemplateNames | .[] as $_a | $allTemplates | .[] | select(.metadata.name == $_a)'
+            masterChildTemplateName:
+              type: jq
+              input:
+                expression: '$masterTemplates | .[] as $_a | {"name": ($_a.metadata.name), "children": [.[].spec.properties.fabric.pod | .[].templateRef.name | select(. != null)]}'
+            childTemplates:
+              range:
+                value: $masterChildTemplateName | .[]
+              type: map
+              input:
+                key: $VALUE.name
+                value: $allTemplates | [.[] | select(.metadata.name == $VALUE.children.[] )]
+        discoveryRuleNames:
+          type: jq
+          input: 
+            expression: $topoDef | .spec.properties.discoveryRules | select((. | length) > 0)  | .[].discoveryRuleRef.name
+        conditionedDiscoveryRuleBlock:
+          type: block
+          condition:
+            expression: $discoveryRuleNames | length != 0
+          block:
+            targets:
+              type: query
+              input:
+                resource: 
+                  apiVersion: target.yndd.io/v1
+                  kind: Target
+      tasks:
+        topology:
+          type: gotemplate
+          vars:
+            localTopoDef: $topoDef
+          input:  
+            resource: 
+              apiVersion: topo.yndd.io/v1alpha1
+              kind: Topology
+              metadata:
+                name: '{{ (index .localTopoDef 0).metadata.name }}'
+                namespace: default
+              spec:
+                properties:
+                  location:
+                    latitude: a
+                    longitude: b
+        createFabric:
+          range:
+            value: $masterTemplates | .[]
+          type: container
+          image: europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-fabric-image
+          vars:
+            topoDef: $topoDef
+            localMasterTemplate: $VALUE | .
+            localChildTemplates: $VALUE | .metadata.name as $_a | $childTemplates | .[$_a]
+          output:
+            ipAllocations:
+              internal: true
+              conditioned: true
+              resource:
+                apiVersion: ipam.nephio.org/v1alpha1
+                kind: IPAllocation
+            nodes:
+              resource:
+                apiVersion: topo.yndd.io/v1alpha1
+                kind: Node
+            links:
+              resource:
+                apiVersion: topo.yndd.io/v1alpha1
+                kind: Link
+  # services:
+  #   ipamService1:
+  #     type: container
+  #     image: europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-ipam-service-image:latest
+  #     output:
+  #       ipAllocations:
+  #         internal: true
+  #         resource:
+  #           apiVersion: ipam.nephio.org/v1alpha1
+  #           kind: IPAllocation

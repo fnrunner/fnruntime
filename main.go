@@ -22,21 +22,33 @@ import (
 	"os"
 	"time"
 
-	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
-	"github.com/fnrunner/fnruntime/internal/fnproxy"
+	"github.com/fnrunner/fnruntime/internal/ctrlr/builder"
+	"github.com/fnrunner/fnruntime/internal/ctrlr/controller"
+	"github.com/fnrunner/fnruntime/internal/ctrlr/controllers/reconciler"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/fnproxy"
+	"github.com/fnrunner/fnruntime/pkg/ctrlr/manager"
+	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
+	"github.com/fnrunner/fnsyntax/pkg/ccsyntax"
 	"github.com/pkg/profile"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/yaml.v2"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
+/*
 const (
 	fnImage  = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-fabric-image:latest"
 	svcImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/ipam-injector-service-image:latest"
 )
+*/
+
+// const yamlFile = "./examples/upf.yaml"
+const yamlFile = "./examples/topo4.yaml"
 
 func main() {
 	var metricsAddr string
@@ -81,7 +93,71 @@ func main() {
 		os.Exit(1)
 	}
 
-	l.Info("setup controller")
+	fb, err := os.ReadFile(yamlFile)
+	if err != nil {
+		l.Error(err, "cannot read file")
+		os.Exit(1)
+	}
+	l.Info("read file")
+
+	ctrlcfg := &ctrlcfgv1alpha1.ControllerConfig{}
+	if err := yaml.Unmarshal(fb, ctrlcfg); err != nil {
+		l.Error(err, "cannot unmarshal")
+		os.Exit(1)
+	}
+	l.Info("unmarshal succeeded")
+
+	p, result := ccsyntax.NewParser(ctrlcfg)
+	if len(result) > 0 {
+		l.Error(err, "ccsyntax validation failed", "result", result)
+		os.Exit(1)
+	}
+	l.Info("ccsyntax validation succeeded")
+
+	ceCtx, result := p.Parse()
+	if len(result) != 0 {
+		for _, res := range result {
+			l.Error(err, "ccsyntax parsing failed", "result", res)
+		}
+		os.Exit(1)
+	}
+	l.Info("ccsyntax parsing succeeded")
+
+	gvks, result := p.GetExternalResources()
+	if len(result) > 0 {
+		l.Error(err, "ccsyntax get external resources failed", "result", result)
+		os.Exit(1)
+	}
+	// validate if we can resolve the gvr to gvk in the system
+	for _, gvk := range gvks {
+		gvk, err := mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}, gvk.Version)
+		if err != nil {
+			l.Error(err, "ccsyntax get gvk mapping in api server", "result", result)
+			os.Exit(1)
+		}
+		l.Info("gvk", "value", gvk)
+	}
+
+	ge := make(chan event.GenericEvent)
+
+	b := builder.New(&builder.Config{
+		Mgr:          mgr,
+		CeCtx:        ceCtx,
+		GenericEvent: ge,
+	}, controller.Options{
+		MaxConcurrentReconciles: 8,
+	})
+	_, err = b.Build(reconciler.New(&reconciler.Config{
+		Client:       mgr.GetClient(),
+		PollInterval: 1 * time.Minute,
+		CeCtx:        ceCtx,
+	}))
+	if err != nil {
+		l.Error(err, "cannot build controller")
+		os.Exit(1)
+	}
+
+	l.Info("setup fnruntime controller")
 	ctx := ctrl.SetupSignalHandler()
 
 	c, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
@@ -93,21 +169,14 @@ func main() {
 	fnProxy := fnproxy.New(&fnproxy.Config{
 		Clientset: c,
 	})
+	go fnProxy.Start(ctx)
 
-	if err := fnProxy.CreatePod(ctx, fnrunv1alpha1.Image{
-		Name: svcImage,
-		Kind: fnrunv1alpha1.ImageKindService,
-	}); err != nil {
-		l.Error(err, "unable to create svc pod")
-		os.Exit(1)
-	}
-
-	if err := fnProxy.CreatePod(ctx, fnrunv1alpha1.Image{
-		Name: fnImage,
-		Kind: fnrunv1alpha1.ImageKindFunction,
-	}); err != nil {
-		l.Error(err, "unable to create fn pod")
-		os.Exit(1)
+	// create the fn pods based on the image information
+	for _, image := range p.GetImages() {
+		if err := fnProxy.CreatePod(ctx, *image); err != nil {
+			l.Error(err, "unable to create svc pod")
+			os.Exit(1)
+		}
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

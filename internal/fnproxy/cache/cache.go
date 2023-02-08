@@ -26,7 +26,7 @@ import (
 	"github.com/fnrunner/fnproto/pkg/executor/execclient"
 	"github.com/fnrunner/fnproto/pkg/service/svcclient"
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
-	"github.com/fnrunner/fnruntime/internal/watcher"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/watcher"
 	"github.com/fnrunner/fnwrapper/pkg/fnwrapper"
 )
 
@@ -39,9 +39,9 @@ type Cache interface {
 	SetPodName(image fnrunv1alpha1.Image, podName string) error
 	GetPodName(image fnrunv1alpha1.Image) string
 	SetClient(image fnrunv1alpha1.Image, IPaddress string) error
-	DeleteCLient(image fnrunv1alpha1.Image)
-	GetFnCLient(image fnrunv1alpha1.Image) execclient.Client
-	GetSvcCLient(image fnrunv1alpha1.Image) svcclient.Client
+	DeleteClient(image fnrunv1alpha1.Image)
+	GetFnClient(image fnrunv1alpha1.Image) execclient.Client
+	GetSvcClient(image fnrunv1alpha1.Image) svcclient.Client
 	SetWatcher(image fnrunv1alpha1.Image, w watcher.Watcher) error
 	GetWatcher(image fnrunv1alpha1.Image) watcher.Watcher
 }
@@ -196,7 +196,7 @@ func (r *cache) SetClient(image fnrunv1alpha1.Image, ipAddr string) error {
 	}
 }
 
-func (r *cache) DeleteCLient(image fnrunv1alpha1.Image) {
+func (r *cache) DeleteClient(image fnrunv1alpha1.Image) {
 	r.m.Lock()
 	defer r.m.Unlock()
 	if _, ok := r.d[image]; !ok {
@@ -206,7 +206,7 @@ func (r *cache) DeleteCLient(image fnrunv1alpha1.Image) {
 	r.d[image].svcclient = nil
 }
 
-func (r *cache) GetFnCLient(image fnrunv1alpha1.Image) execclient.Client {
+func (r *cache) GetFnClient(image fnrunv1alpha1.Image) execclient.Client {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	c, ok := r.d[image]
@@ -216,7 +216,7 @@ func (r *cache) GetFnCLient(image fnrunv1alpha1.Image) execclient.Client {
 	return c.execclient
 }
 
-func (r *cache) GetSvcCLient(image fnrunv1alpha1.Image) svcclient.Client {
+func (r *cache) GetSvcClient(image fnrunv1alpha1.Image) svcclient.Client {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	c, ok := r.d[image]

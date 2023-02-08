@@ -1,0 +1,73 @@
+apiVersion: config.fnrun.io/v1
+kind: ControllerConfig
+metadata:
+  name: upfController
+  namespace: default
+spec:
+  for: 
+    upfcr: 
+      resource: 
+        apiVersion: nf.nephio.org/v1alpha1
+        kind: Upf
+      applyPipelineRef: forApplyPipeline
+      deletePipelineRef: forDeletePipeline
+  pipelines:
+  - name: forDeletePipeline
+  - name: forApplyPipeline
+    vars:
+    tasks:
+      upfFn:
+        type: container
+        image: europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-upf-image:latest
+        vars:
+          upf: $upfcr
+        output:
+          implementation:
+            internal: true
+            resource:
+              apiVersion: nf.nephio.org/v1alpha1
+              kind: UpfImplementation
+      conditionalBlockImplA:
+        type: block
+        condition:
+          expression: $implementation | .[0].spec.implementation == "a"
+        block:
+          implA:
+            type: query
+            input:
+              resource: 
+                apiVersion: upf.a.org/v1alpha1
+                kind: UpfA
+          implFnA:
+            type: container
+            image: europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-upf-impla-image:latest
+            vars:
+              a: $implA
+              upf: $upfcr
+            output:
+              upfA:
+                resource:
+                  apiVersion: nf.nephio.org/v1alpha1
+                  kind: Upf
+      conditionalBlockImplB:
+        type: block
+        condition:
+          expression: $implementation | .[0].spec.implementation == "b"
+        block:
+          implB:
+            type: query
+            input:
+              resource: 
+                apiVersion: upf.b.org/v1alpha1
+                kind: UpfB
+          implFnB:
+            type: container
+            image: europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-upf-implb-image:latest
+            vars:
+              b: $implB
+              upf: $upfcr
+            output:
+              upfB:
+                resource:
+                  apiVersion: nf.nephio.org/v1alpha1
+                  kind: Upf

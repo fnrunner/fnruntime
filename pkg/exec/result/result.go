@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fnrunner/fnutils/pkg/slice"
 	"github.com/fnrunner/fnruntime/pkg/exec/input"
 	"github.com/fnrunner/fnruntime/pkg/exec/output"
+	"github.com/fnrunner/fnutils/pkg/slice"
 )
 
 type Result interface {

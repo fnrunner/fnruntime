@@ -21,9 +21,9 @@ import (
 	"os"
 	"sync"
 
+	"github.com/fnrunner/fnruntime/pkg/exec/output"
 	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
 	"github.com/fnrunner/fnutils/pkg/dag"
-	"github.com/fnrunner/fnruntime/pkg/exec/output"
 )
 
 type RuntimeDAG interface {

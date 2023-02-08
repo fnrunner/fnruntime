@@ -25,8 +25,12 @@ import (
 	"strconv"
 
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
-	"github.com/fnrunner/fnruntime/internal/cache"
-	"github.com/fnrunner/fnruntime/internal/watcher"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/cache"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/exechandler"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/grpcserver"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/healthhandler"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/servicehandler"
+	"github.com/fnrunner/fnruntime/internal/fnproxy/watcher"
 	"github.com/fnrunner/fnwrapper/pkg/fnwrapper"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -46,6 +50,7 @@ type Config struct {
 }
 
 type PodProxy interface {
+	Start(ctx context.Context)
 	CreatePod(ctx context.Context, image fnrunv1alpha1.Image) error
 	DeletePod(ctx context.Context, image fnrunv1alpha1.Image) error
 }
@@ -63,21 +68,47 @@ func New(cfg *Config) PodProxy {
 		fnWrapperImage = fnrunv1alpha1.DefaultFnWrapperImage
 	}
 
+	c := cache.NewCache()
+
+	hh := healthhandler.New()
+	sh := servicehandler.New(c)
+	eh := exechandler.New(c)
+
+	s := grpcserver.New(grpcserver.Config{
+		Address:  fmt.Sprintf(":%d", fnrunv1alpha1.FnProxyGRPCServerPort),
+		Insecure: true,
+	},
+		grpcserver.WithServiceApplyResourceHandler(sh.ApplyResource),
+		grpcserver.WithServiceDeleteResourceHandler(sh.DeleteResource),
+		grpcserver.WithExecHandler(eh.ExecuteFuntion),
+		grpcserver.WithWatchHandler(hh.Watch),
+		grpcserver.WithCheckHandler(hh.Check),
+	)
+
 	return &proxy{
+		s:              s,
 		clientset:      cfg.Clientset,
 		namespace:      namespace,
 		fnWrapperImage: fnWrapperImage,
-		cache:          cache.NewCache(),
+		cache:          c,
 		l:              l,
 	}
 }
 
 type proxy struct {
+	s              *grpcserver.GrpcServer
 	clientset      *kubernetes.Clientset
 	namespace      string
 	fnWrapperImage string
 	cache          cache.Cache
 	l              logr.Logger
+}
+
+func (r *proxy) Start(ctx context.Context) {
+	if err := r.s.Start(ctx); err != nil {
+		r.l.Error(err, "cannot start grpcserver")
+		os.Exit(1)
+	}
 }
 
 func (r *proxy) DeletePod(ctx context.Context, image fnrunv1alpha1.Image) error {
@@ -332,7 +363,7 @@ func (r *proxy) buildService(image fnrunv1alpha1.Image, podName string) *corev1.
 }
 
 func (r *proxy) deleteClient(image fnrunv1alpha1.Image) {
-	r.cache.DeleteCLient(image)
+	r.cache.DeleteClient(image)
 }
 
 func (r *proxy) createClient(image fnrunv1alpha1.Image, podIP string) {
