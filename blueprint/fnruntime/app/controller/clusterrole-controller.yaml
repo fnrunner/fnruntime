@@ -49,3 +49,16 @@ rules:
   - patch
   - create
   - delete
+- apiGroups:
+  - '*'
+  resources:
+  - pods
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - create
+  - delete

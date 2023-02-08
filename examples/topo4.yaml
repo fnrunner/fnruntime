@@ -109,13 +109,3 @@ spec:
               resource:
                 apiVersion: topo.yndd.io/v1alpha1
                 kind: Link
-  # services:
-  #   ipamService1:
-  #     type: container
-  #     image: europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-ipam-service-image:latest
-  #     output:
-  #       ipAllocations:
-  #         internal: true
-  #         resource:
-  #           apiVersion: ipam.nephio.org/v1alpha1
-  #           kind: IPAllocation

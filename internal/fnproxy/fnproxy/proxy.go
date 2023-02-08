@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/cache"
@@ -196,14 +197,27 @@ func (r *proxy) getOrCreatePod(ctx context.Context, image fnrunv1alpha1.Image) (
 	}
 	svc := r.buildService(image, podName)
 	if _, err := r.clientset.CoreV1().Services(r.namespace).Create(ctx, svc, metav1.CreateOptions{}); err != nil {
-		return types.NamespacedName{}, err
+		/*
+			if meta.IgnoreAlreadyExists(err) != nil {
+				return types.NamespacedName{}, err
+			}
+		*/
+		if !strings.Contains(err.Error(), "already exists") {
+			return types.NamespacedName{}, err
+		}
 	}
 	pod, err := r.buildPod(image, podName)
 	if err != nil {
 		return types.NamespacedName{}, err
 	}
 	if _, err := r.clientset.CoreV1().Pods(r.namespace).Create(ctx, pod, metav1.CreateOptions{}); err != nil {
-		return types.NamespacedName{}, err
+		if !strings.Contains(err.Error(), "already exists") {
+			return types.NamespacedName{}, err
+		}
+
+		//if meta.IgnoreAlreadyExists(err) != nil {
+		//	return types.NamespacedName{}, err
+		//}
 	}
 	return client.ObjectKeyFromObject(pod), nil
 }

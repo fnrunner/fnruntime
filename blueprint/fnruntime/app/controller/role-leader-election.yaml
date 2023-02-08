@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/part-of: fnruntime
     app.kubernetes.io/version: tbd
   name: fnruntime-controller-leader-election-role
+  namespace: fnrun
 rules:
 - apiGroups:
   - ""

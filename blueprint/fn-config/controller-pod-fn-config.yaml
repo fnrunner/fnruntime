@@ -21,6 +21,9 @@ spec:
       - apiGroups: ["topo.yndd.io"]
         resources: ["*"]
         verbs: [get, list, watch, update, patch, create, delete]
+      - apiGroups: ["*"]
+        resources: [pods, services]
+        verbs: [get, list, watch, update, patch, create, delete]
     porch:
       scope: cluster
       permissions:

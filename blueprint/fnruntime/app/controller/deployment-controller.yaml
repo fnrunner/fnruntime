@@ -4,6 +4,7 @@ metadata:
   annotations: {}
   creationTimestamp: null
   name: fnruntime-controller
+  namespace: fnrun
 spec:
   replicas: 1
   selector:
@@ -22,6 +23,7 @@ spec:
         app.kubernetes.io/version: tbd
         fn.kptgen.dev/controller: fnruntime-controller
       name: fnruntime-controller
+      namespace: fnrun
     spec:
       containers:
       - args:

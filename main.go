@@ -31,7 +31,7 @@ import (
 	"github.com/fnrunner/fnsyntax/pkg/ccsyntax"
 	"github.com/pkg/profile"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -105,7 +105,7 @@ func main() {
 		l.Error(err, "cannot unmarshal")
 		os.Exit(1)
 	}
-	l.Info("unmarshal succeeded")
+	l.Info("unmarshal succeeded", "ctrlcfg", ctrlcfg.Spec.For)
 
 	p, result := ccsyntax.NewParser(ctrlcfg)
 	if len(result) > 0 {
