@@ -28,7 +28,7 @@ type SubServer interface {
 
 func New(c cache.Cache) SubServer {
 	r := &subServer{
-		l: ctrl.Log.WithName("exechandler"),
+		l: ctrl.Log.WithName("subserverExec"),
 		c: c,
 	}
 	return r

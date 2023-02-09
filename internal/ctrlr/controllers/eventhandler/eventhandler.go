@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 type Config struct {
@@ -44,10 +43,12 @@ type Config struct {
 }
 
 func New(c *Config) handler.EventHandler {
-	opts := zap.Options{
-		Development: true,
-	}
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	/*
+		opts := zap.Options{
+			Development: true,
+		}
+		ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	*/
 
 	return &eventhandler{
 		//ctx:    ctx,

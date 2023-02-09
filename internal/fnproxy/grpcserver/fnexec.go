@@ -22,13 +22,14 @@ import (
 	"github.com/fnrunner/fnproto/pkg/executor/executorpb"
 )
 
-func (s *GrpcServer) ExecuteFuntion(ctx context.Context, req *executorpb.ExecuteFunctionRequest) (*executorpb.ExecuteFunctionResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+func (r *GrpcServer) ExecuteFuntion(ctx context.Context, req *executorpb.ExecuteFunctionRequest) (*executorpb.ExecuteFunctionResponse, error) {
+	r.l.Info("execute fn", "req", req)
+	ctx, cancel := context.WithTimeout(ctx, r.config.Timeout)
 	defer cancel()
-	err := s.acquireSem(ctx)
+	err := r.acquireSem(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer s.sem.Release(1)
-	return s.execHandler(ctx, req)
+	defer r.sem.Release(1)
+	return r.execHandler(ctx, req)
 }

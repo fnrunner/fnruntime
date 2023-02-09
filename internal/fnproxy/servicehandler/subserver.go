@@ -33,7 +33,7 @@ type SubServer interface {
 
 func New(c cache.Cache) SubServer {
 	r := &subServer{
-		l: ctrl.Log.WithName("servicehandler"),
+		l: ctrl.Log.WithName("subserverService"),
 		c: c,
 	}
 	return r

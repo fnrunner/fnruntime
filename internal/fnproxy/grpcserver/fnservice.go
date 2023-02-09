@@ -23,24 +23,24 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
-func (s *GrpcServer) ApplyResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*servicepb.FunctionServiceResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+func (r *GrpcServer) ApplyResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*servicepb.FunctionServiceResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.config.Timeout)
 	defer cancel()
-	err := s.acquireSem(ctx)
+	err := r.acquireSem(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer s.sem.Release(1)
-	return s.applyResourceHandler(ctx, req)
+	defer r.sem.Release(1)
+	return r.applyResourceHandler(ctx, req)
 }
 
-func (s *GrpcServer) DeleteResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*emptypb.Empty, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+func (r *GrpcServer) DeleteResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*emptypb.Empty, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.config.Timeout)
 	defer cancel()
-	err := s.acquireSem(ctx)
+	err := r.acquireSem(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer s.sem.Release(1)
-	return s.deleteResourceHandler(ctx, req)
+	defer r.sem.Release(1)
+	return r.deleteResourceHandler(ctx, req)
 }

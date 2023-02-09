@@ -75,6 +75,7 @@ func (blder *builder) doWatch() error {
 	// we validate that there is only 1 for so we are ok here
 	gvk := blder.ceCtx.GetForGVK()
 	typeForSrc := meta.GetUnstructuredFromGVK(gvk)
+
 	src := &source.Kind{Type: typeForSrc}
 	hdler := &handler.EnqueueRequestForObject{}
 	allPredicates := append(blder.globalPredicates, []predicate.Predicate{}...)

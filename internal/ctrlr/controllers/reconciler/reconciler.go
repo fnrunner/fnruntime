@@ -29,7 +29,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/fnrunner/fnruntime/internal/ctrlr/event"
@@ -65,10 +64,12 @@ type Config struct {
 }
 
 func New(c *Config) reconcile.Reconciler {
-	opts := zap.Options{
-		Development: true,
-	}
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	/*
+		opts := zap.Options{
+			Development: true,
+		}
+		ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	*/
 
 	return &reconciler{
 		client:       applicator.ClientApplicator{Client: c.Client, Applicator: applicator.NewAPIPatchingApplicator(c.Client)},
@@ -211,13 +212,13 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 	}
 
-	r.l.Info("reconcile apply finsihed...")
+	r.l.Info("reconcile apply finished...")
 	return reconcile.Result{}, errors.Wrap(r.client.Status().Update(ctx, cr), errUpdateStatus)
 }
 
 func (r *reconciler) getFnClients() (*clients.Clients, error) {
 	svcClient, err := svcclient.New(&svcclient.Config{
-		Address:  fmt.Sprintf("%s:%d", "127.0.0.1", fnrunv1alpha1.FnGRPCServerPort),
+		Address:  fmt.Sprintf("%s:%d", "127.0.0.1", fnrunv1alpha1.FnProxyGRPCServerPort),
 		Insecure: true,
 	})
 	if err != nil {
@@ -226,7 +227,7 @@ func (r *reconciler) getFnClients() (*clients.Clients, error) {
 	}
 
 	execClient, err := execclient.New(&execclient.Config{
-		Address:  fmt.Sprintf("%s:%d", "127.0.0.1", fnrunv1alpha1.FnGRPCServerPort),
+		Address:  fmt.Sprintf("%s:%d", "127.0.0.1", fnrunv1alpha1.FnProxyGRPCServerPort),
 		Insecure: true,
 	})
 	if err != nil {

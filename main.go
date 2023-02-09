@@ -22,22 +22,25 @@ import (
 	"os"
 	"time"
 
-	"github.com/fnrunner/fnruntime/internal/ctrlr/builder"
-	"github.com/fnrunner/fnruntime/internal/ctrlr/controller"
 	"github.com/fnrunner/fnruntime/internal/ctrlr/controllers/reconciler"
+	"github.com/fnrunner/fnruntime/internal/ctrlr/fncontroller"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/fnproxy"
-	"github.com/fnrunner/fnruntime/pkg/ctrlr/manager"
+
+	//"github.com/fnrunner/fnruntime/pkg/ctrlr/manager"
 	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
 	"github.com/fnrunner/fnsyntax/pkg/ccsyntax"
 	"github.com/pkg/profile"
 	"go.uber.org/zap/zapcore"
-	"sigs.k8s.io/yaml"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/yaml"
 )
 
 /*
@@ -85,8 +88,13 @@ func main() {
 	}
 
 	mgr, err := manager.New(ctrl.GetConfigOrDie(), manager.Options{
-		Namespace:              os.Getenv("POD_NAMESPACE"),
+		Scheme:    runtime.NewScheme(),
+		Namespace: os.Getenv("POD_NAMESPACE"),
+		//MetricsBindAddress: metricsAddr,
+		//Port: 9443,
 		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "c6789sd34.fnrun.io",
 	})
 	if err != nil {
 		l.Error(err, "unable to create manager")
@@ -140,25 +148,37 @@ func main() {
 
 	ge := make(chan event.GenericEvent)
 
-	b := builder.New(&builder.Config{
-		Mgr:          mgr,
-		CeCtx:        ceCtx,
-		GenericEvent: ge,
-	}, controller.Options{
-		MaxConcurrentReconciles: 8,
-	})
-	_, err = b.Build(reconciler.New(&reconciler.Config{
-		Client:       mgr.GetClient(),
-		PollInterval: 1 * time.Minute,
-		CeCtx:        ceCtx,
-	}))
-	if err != nil {
-		l.Error(err, "cannot build controller")
-		os.Exit(1)
-	}
+	/*
+		b := builder.New(&builder.Config{
+			Mgr:          mgr,
+			CeCtx:        ceCtx,
+			GenericEvent: ge,
+		}, controller.Options{
+			MaxConcurrentReconciles: 8,
+		})
+		_, err = b.Build(reconciler.New(&reconciler.Config{
+			Client:       mgr.GetClient(),
+			PollInterval: 1 * time.Minute,
+			CeCtx:        ceCtx,
+		}))
+		if err != nil {
+			l.Error(err, "cannot build controller")
+			os.Exit(1)
+		}
+	*/
 
 	l.Info("setup fnruntime controller")
 	ctx := ctrl.SetupSignalHandler()
+
+	fnc := fncontroller.New(mgr, ceCtx, ge)
+	fnc.Start(ctx, ctrlcfg.Name, controller.Options{
+		Reconciler: reconciler.New(&reconciler.Config{
+			Client:       mgr.GetClient(),
+			PollInterval: 1 * time.Minute,
+			CeCtx:        ceCtx,
+		}),
+	},
+	)
 
 	c, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
 	if err != nil {

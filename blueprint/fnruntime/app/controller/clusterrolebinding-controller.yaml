@@ -14,7 +14,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: fnruntime-controller-controller-role
+  name: cluster-admin
 subjects:
 - kind: ServiceAccount
   name: fnruntime-controller

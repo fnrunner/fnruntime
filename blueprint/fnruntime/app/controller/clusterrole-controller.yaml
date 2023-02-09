@@ -40,7 +40,11 @@ rules:
 - apiGroups:
   - topo.yndd.io
   resources:
-  - '*'
+  - definitions
+  - templates
+  - nodes
+  - links
+  - topologies
   verbs:
   - get
   - list
