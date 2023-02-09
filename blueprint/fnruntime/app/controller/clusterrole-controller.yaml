@@ -45,6 +45,7 @@ rules:
   - nodes
   - links
   - topologies
+  - definitions/status
   verbs:
   - get
   - list

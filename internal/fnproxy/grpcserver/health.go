@@ -22,32 +22,32 @@ import (
 )
 
 // Check implements `service Health`.
-func (s *GrpcServer) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.config.Timeout)
+func (r *GrpcServer) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.config.Timeout)
 	defer cancel()
-	err := s.acquireSem(ctx)
+	err := r.acquireSem(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer s.sem.Release(1)
+	defer r.sem.Release(1)
 
-	if s.checkHandler != nil {
-		return s.checkHandler(ctx, in)
+	if r.checkHandler != nil {
+		return r.checkHandler(ctx, in)
 	}
 
 	return &healthpb.HealthCheckResponse{}, nil
 }
 
 // Watch implements `service Health`.
-func (s *GrpcServer) Watch(in *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	err := s.acquireSem(stream.Context())
+func (r *GrpcServer) Watch(in *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
+	err := r.acquireSem(stream.Context())
 	if err != nil {
 		return err
 	}
-	defer s.sem.Release(1)
+	defer r.sem.Release(1)
 
-	if s.watchHandler != nil {
-		return s.watchHandler(in, stream)
+	if r.watchHandler != nil {
+		return r.watchHandler(in, stream)
 	}
 	return status.Error(codes.Unimplemented, "")
 }

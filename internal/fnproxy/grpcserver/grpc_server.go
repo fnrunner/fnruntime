@@ -84,40 +84,40 @@ func New(c Config, opts ...Option) *GrpcServer {
 	return s
 }
 
-func (s *GrpcServer) Start(ctx context.Context) error {
-	s.l = log.FromContext(ctx)
-	s.l.Info("grpc server start...")
-	s.l.Info("grpc server start",
-		"address", s.config.Address,
-		"certDir", s.config.CertDir,
-		"certName", s.config.CertName,
-		"keyName", s.config.KeyName,
-		"caName", s.config.CaName,
+func (r *GrpcServer) Start(ctx context.Context) error {
+	r.l = log.FromContext(ctx)
+	r.l.Info("grpc server start...")
+	r.l.Info("grpc server start",
+		"address", r.config.Address,
+		"certDir", r.config.CertDir,
+		"certName", r.config.CertName,
+		"keyName", r.config.KeyName,
+		"caName", r.config.CaName,
 	)
-	l, err := net.Listen("tcp", s.config.Address)
+	l, err := net.Listen("tcp", r.config.Address)
 	if err != nil {
 		return errors.Wrap(err, "cannot listen")
 	}
-	opts, err := s.serverOpts(ctx)
+	opts, err := r.serverOpts(ctx)
 	if err != nil {
 		return err
 	}
 	// create a gRPC server object
 	grpcServer := grpc.NewServer(opts...)
 
-	servicepb.RegisterFunctionServiceServer(grpcServer, s)
-	s.l.Info("grpc server with service function...")
+	servicepb.RegisterFunctionServiceServer(grpcServer, r)
+	r.l.Info("grpc server with service function...")
 
-	executorpb.RegisterFunctionExecutorServer(grpcServer, s)
-	s.l.Info("grpc server with allocation...")
+	executorpb.RegisterFunctionExecutorServer(grpcServer, r)
+	r.l.Info("grpc server with exec function...")
 
-	healthpb.RegisterHealthServer(grpcServer, s)
-	s.l.Info("grpc server with health...")
+	healthpb.RegisterHealthServer(grpcServer, r)
+	r.l.Info("grpc server with health...")
 
-	s.l.Info("starting grpc server...")
+	r.l.Info("starting grpc server...")
 	err = grpcServer.Serve(l)
 	if err != nil {
-		s.l.Info("gRPC serve failed", "error", err)
+		r.l.Info("gRPC serve failed", "error", err)
 		return err
 	}
 	return nil

@@ -19,7 +19,7 @@ spec:
         resources: [leases]
         verbs: [get, list, watch, update, patch, create, delete]
       - apiGroups: ["topo.yndd.io"]
-        resources: [definitions, templates, nodes, links, topologies]
+        resources: [definitions, templates, nodes, links, topologies, definitions/status]
         verbs: [get, list, watch, update, patch, create, delete]
       - apiGroups: ["*"]
         resources: [pods, services]

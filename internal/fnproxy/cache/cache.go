@@ -20,14 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/fnrunner/fnproto/pkg/executor/execclient"
 	"github.com/fnrunner/fnproto/pkg/service/svcclient"
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/watcher"
-	"github.com/fnrunner/fnwrapper/pkg/fnwrapper"
 )
 
 type Cache interface {
@@ -166,14 +166,17 @@ func (r *cache) GetCancelFn(image fnrunv1alpha1.Image) context.CancelFunc {
 func (r *cache) SetClient(image fnrunv1alpha1.Image, ipAddr string) error {
 	r.m.Lock()
 	defer r.m.Unlock()
-	if _, ok := r.d[image]; !ok {
+	c, ok := r.d[image]
+	if !ok {
 		return errors.New("cannot set client, image entry is not initialized")
 	}
 	// TBD if we need to deal with updating IP addresses
+	address := strings.Join([]string{c.podName, os.Getenv("POD_NAMESPACE"), "svc.cluster.local"}, ".")
 	switch image.Kind {
 	case fnrunv1alpha1.ImageKindFunction:
 		cl, err := execclient.New(&execclient.Config{
-			Address:  fmt.Sprintf("%s:%s", ipAddr, strconv.Itoa(fnwrapper.FnGRPCServerPort)),
+			Address: fmt.Sprintf("%s:%d", address, fnrunv1alpha1.FnGRPCServerPort),
+			//Address:  fmt.Sprintf("%s:%d", ipAddr, fnrunv1alpha1.FnGRPCServerPort),
 			Insecure: true,
 		})
 		if err != nil {
@@ -183,7 +186,8 @@ func (r *cache) SetClient(image fnrunv1alpha1.Image, ipAddr string) error {
 		return nil
 	case fnrunv1alpha1.ImageKindService:
 		cl, err := svcclient.New(&svcclient.Config{
-			Address:  fmt.Sprintf("%s:%s", ipAddr, strconv.Itoa(fnwrapper.FnGRPCServerPort)),
+			Address: fmt.Sprintf("%s:%d", address, fnrunv1alpha1.FnGRPCServerPort),
+			//Address:  fmt.Sprintf("%s:%d", ipAddr, fnrunv1alpha1.FnGRPCServerPort),
 			Insecure: true,
 		})
 		if err != nil {

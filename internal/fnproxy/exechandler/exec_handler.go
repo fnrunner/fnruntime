@@ -24,11 +24,16 @@ import (
 )
 
 func (r *subServer) ExecuteFuntion(ctx context.Context, req *executorpb.ExecuteFunctionRequest) (*executorpb.ExecuteFunctionResponse, error) {
-	r.l.Info("execute function", "req", req)
+	r.l.Info("execute function", "image", req.Image)
 
-	execclient := r.c.GetFnClient(fnrunv1alpha1.Image{Name: req.GetImage(), Kind: fnrunv1alpha1.ImageKindService})
+	execclient := r.c.GetFnClient(fnrunv1alpha1.Image{Name: req.GetImage(), Kind: fnrunv1alpha1.ImageKindFunction})
 	if execclient == nil {
 		return &executorpb.ExecuteFunctionResponse{}, ErrClientNotready
 	}
-	return execclient.Get().ExecuteFunction(ctx, req)
+	r.l.Info("execute function", "client config", execclient.GetConfig())
+	resp, err := execclient.Get().ExecuteFunction(ctx, req)
+	if err != nil {
+		r.l.Info("cannot execute function", "err", err)
+	}
+	return resp, err
 }

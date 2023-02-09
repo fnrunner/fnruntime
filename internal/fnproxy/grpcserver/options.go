@@ -27,14 +27,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 )
 
-func (s *GrpcServer) serverOpts(ctx context.Context) ([]grpc.ServerOption, error) {
-	if s.config.Insecure {
+func (r *GrpcServer) serverOpts(ctx context.Context) ([]grpc.ServerOption, error) {
+	if r.config.Insecure {
 		return []grpc.ServerOption{
 			grpc.Creds(insecure.NewCredentials()),
 		}, nil
 	}
 
-	tlsConfig, err := s.createTLSConfig(ctx)
+	tlsConfig, err := r.createTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,17 +44,17 @@ func (s *GrpcServer) serverOpts(ctx context.Context) ([]grpc.ServerOption, error
 
 }
 
-func (s *GrpcServer) createTLSConfig(ctx context.Context) (*tls.Config, error) {
+func (r *GrpcServer) createTLSConfig(ctx context.Context) (*tls.Config, error) {
 
-	caPath := filepath.Join(s.config.CertDir, s.config.CaName)
+	caPath := filepath.Join(r.config.CertDir, r.config.CaName)
 
 	ca, err := os.ReadFile(caPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read client CA cert: %w", err)
 	}
 
-	certPath := filepath.Join(s.config.CertDir, s.config.CertName)
-	keyPath := filepath.Join(s.config.CertDir, s.config.KeyName)
+	certPath := filepath.Join(r.config.CertDir, r.config.CertName)
+	keyPath := filepath.Join(r.config.CertDir, r.config.KeyName)
 
 	certWatcher, err := certwatcher.New(certPath, keyPath)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *GrpcServer) createTLSConfig(ctx context.Context) (*tls.Config, error) {
 
 	go func() {
 		if err := certWatcher.Start(ctx); err != nil {
-			s.l.Info("certificate watcher", "error", err)
+			r.l.Info("certificate watcher", "error", err)
 		}
 	}()
 

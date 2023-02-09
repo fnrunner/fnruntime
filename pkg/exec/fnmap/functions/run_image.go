@@ -23,7 +23,6 @@ import (
 	"sync"
 
 	"github.com/fnrunner/fnproto/pkg/executor/executorpb"
-	"github.com/fnrunner/fnproto/pkg/service/servicepb"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap"
 	"github.com/fnrunner/fnruntime/pkg/exec/input"
@@ -32,7 +31,6 @@ import (
 	"github.com/fnrunner/fnruntime/pkg/exec/rtdag"
 	"github.com/fnrunner/fnsdk/go/fn"
 	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
-	"github.com/fnrunner/fnutils/pkg/meta"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -148,6 +146,9 @@ func (r *image) run(ctx context.Context, i input.Input) (any, error) {
 		return nil, err
 	}
 
+	r.l.Info("client", "exec client config", r.clients.Execclient.GetConfig())
+	fmt.Printf("exec client: %#v\n", r.clients.Execclient.GetConfig())
+
 	resp, err := r.clients.Execclient.Get().ExecuteFunction(ctx, &executorpb.ExecuteFunctionRequest{
 		ResourceContext: rCtx,
 		Image:           r.fnconfig.Image,
@@ -203,24 +204,26 @@ func (r *image) recordOutput(o any) {
 				r.errs = append(r.errs, err.Error())
 				break
 			}
-			if _, ok := u.GetLabels()[fn.ConditionedResourceKey]; ok {
-				// invoke the service to get the condition resolved
-				// lookup service client
-				r.l.Info("conditioned resource", "gvkString", gvkString, "gvk", meta.GetGVKFromObject(&u))
+			/*
+				if _, ok := u.GetLabels()[fn.ConditionedResourceKey]; ok {
+					// invoke the service to get the condition resolved
+					// lookup service client
+					r.l.Info("conditioned resource", "gvkString", gvkString, "gvk", meta.GetGVKFromObject(&u))
 
-				// involke the service
-				resp, err := r.clients.Svcclient.Get().ApplyResource(context.Background(), &servicepb.FunctionServiceRequest{
-					Resource: krm.Raw,
-					Image:    r.fnconfig.Image,
-				})
-				if err != nil {
-					r.l.Error(err, "cannot apply service")
-					r.errs = append(r.errs, err.Error())
-					break
+					// involke the service
+					resp, err := r.clients.Svcclient.Get().ApplyResource(context.Background(), &servicepb.FunctionServiceRequest{
+						Resource: krm.Raw,
+						Image:    r.fnconfig.Image,
+					})
+					if err != nil {
+						r.l.Error(err, "cannot apply service")
+						r.errs = append(r.errs, err.Error())
+						break
+					}
+					// replace the krm.Raw with the resolved conditional resource
+					krm.Raw = []byte(resp.GetResource())
 				}
-				// replace the krm.Raw with the resolved conditional resource
-				krm.Raw = []byte(resp.GetResource())
-			}
+			*/
 
 			x := map[string]any{}
 			if err := json.Unmarshal(krm.Raw, &x); err != nil {

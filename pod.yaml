@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grpcurl
+  namespace: fnrun
+spec:
+  containers:
+  - name: grpccurl
+    image: golang:1.19
+    command: [ "/bin/sh", "-c", "--" ]
+    args: [ "while true; do sleep 30; done;" ]
