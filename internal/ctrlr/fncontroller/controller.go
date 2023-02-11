@@ -42,7 +42,7 @@ const (
 	errCreateWatch      = "cannot create watch"
 )
 
-type ConfigController interface {
+type FnController interface {
 	IsRunning() bool
 	Error() error
 	Start(ctx context.Context, name string, o controller.Options) error
@@ -61,7 +61,7 @@ type fnctrlr struct {
 	l      logr.Logger
 }
 
-func New(mgr manager.Manager, ceCtx ccsyntax.ConfigExecutionContext, ge chan event.GenericEvent) ConfigController {
+func New(mgr manager.Manager, ceCtx ccsyntax.ConfigExecutionContext, ge chan event.GenericEvent) FnController {
 	return &fnctrlr{
 		mgr:   mgr,
 		ceCtx: ceCtx,
