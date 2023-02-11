@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fnrunner/fnruntime/internal/ctrlr/controllers/eventhandler"
+	"github.com/fnrunner/fnruntime/pkg/ctrlr/controllers/eventhandler"
 	"github.com/fnrunner/fnsyntax/pkg/ccsyntax"
 	"github.com/fnrunner/fnutils/pkg/meta"
 	"github.com/go-logr/logr"
