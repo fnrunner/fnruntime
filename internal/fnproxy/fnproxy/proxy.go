@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/cache"
@@ -32,6 +31,7 @@ import (
 	"github.com/fnrunner/fnruntime/internal/fnproxy/healthhandler"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/servicehandler"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/watcher"
+	"github.com/fnrunner/fnutils/pkg/meta"
 	"github.com/fnrunner/fnwrapper/pkg/fnwrapper"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -197,12 +197,7 @@ func (r *proxy) getOrCreatePod(ctx context.Context, image fnrunv1alpha1.Image) (
 	}
 	svc := r.buildService(image, podName)
 	if _, err := r.clientset.CoreV1().Services(r.namespace).Create(ctx, svc, metav1.CreateOptions{}); err != nil {
-		/*
-			if meta.IgnoreAlreadyExists(err) != nil {
-				return types.NamespacedName{}, err
-			}
-		*/
-		if !strings.Contains(err.Error(), "already exists") {
+		if meta.IgnoreAlreadyExists(err) != nil {
 			return types.NamespacedName{}, err
 		}
 	}
@@ -211,13 +206,9 @@ func (r *proxy) getOrCreatePod(ctx context.Context, image fnrunv1alpha1.Image) (
 		return types.NamespacedName{}, err
 	}
 	if _, err := r.clientset.CoreV1().Pods(r.namespace).Create(ctx, pod, metav1.CreateOptions{}); err != nil {
-		if !strings.Contains(err.Error(), "already exists") {
+		if meta.IgnoreAlreadyExists(err) != nil {
 			return types.NamespacedName{}, err
 		}
-
-		//if meta.IgnoreAlreadyExists(err) != nil {
-		//	return types.NamespacedName{}, err
-		//}
 	}
 	return client.ObjectKeyFromObject(pod), nil
 }

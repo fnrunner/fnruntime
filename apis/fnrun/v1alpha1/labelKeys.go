@@ -18,7 +18,8 @@ package v1alpha1
 
 const (
 	//labels
-	FunctionLabelKey = "fnrun.io/image"
+	FunctionLabelKey  = "fnrun.io/image"
+	ConfigMapLabelKey = "fnrun.io/configmap"
 
 	// pod spec
 	InitContainerName     = "copy-fnwrapper-server"

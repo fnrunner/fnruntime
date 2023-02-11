@@ -148,25 +148,6 @@ func main() {
 
 	ge := make(chan event.GenericEvent)
 
-	/*
-		b := builder.New(&builder.Config{
-			Mgr:          mgr,
-			CeCtx:        ceCtx,
-			GenericEvent: ge,
-		}, controller.Options{
-			MaxConcurrentReconciles: 8,
-		})
-		_, err = b.Build(reconciler.New(&reconciler.Config{
-			Client:       mgr.GetClient(),
-			PollInterval: 1 * time.Minute,
-			CeCtx:        ceCtx,
-		}))
-		if err != nil {
-			l.Error(err, "cannot build controller")
-			os.Exit(1)
-		}
-	*/
-
 	l.Info("setup fnruntime controller")
 	ctx := ctrl.SetupSignalHandler()
 

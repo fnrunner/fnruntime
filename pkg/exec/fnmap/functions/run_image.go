@@ -204,6 +204,7 @@ func (r *image) recordOutput(o any) {
 				r.errs = append(r.errs, err.Error())
 				break
 			}
+
 			/*
 				if _, ok := u.GetLabels()[fn.ConditionedResourceKey]; ok {
 					// invoke the service to get the condition resolved
