@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/fnrunner/fnruntime/internal/ctrlr/controllers/reconciler"
-	"github.com/fnrunner/fnruntime/internal/ctrlr/fncontroller"
+	"github.com/fnrunner/fnruntime/pkg/ctrlr/fncontroller"
 	"github.com/fnrunner/fnruntime/internal/fnproxy/fnproxy"
 
 	//"github.com/fnrunner/fnruntime/pkg/ctrlr/manager"
