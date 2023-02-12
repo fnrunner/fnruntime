@@ -90,7 +90,7 @@ func (r *fnctrlr) Stop() {
 
 func (r *fnctrlr) Start(ctx context.Context, name string, o controller.Options) error {
 	r.l = log.FromContext(ctx).WithValues("name", name)
-	r.l.Info("start cfgCtrl")
+	r.l.Info("start fncontroller")
 	ctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 
@@ -100,6 +100,7 @@ func (r *fnctrlr) Start(ctx context.Context, name string, o controller.Options) 
 		return fmt.Errorf("%s err: %s", errCreateCache, err)
 	}
 
+	// TBD controller Unmanaged
 	ctrl, err := controller.NewUnmanaged(name, r.mgr, o)
 	if err != nil {
 		r.l.Error(err, errCreateController)
@@ -167,6 +168,7 @@ func (r *fnctrlr) Start(ctx context.Context, name string, o controller.Options) 
 
 	go func() {
 		<-r.mgr.Elected()
+		r.l.Info("start fncontroller cache")
 		r.err = cache.Start(ctx)
 		if r.err != nil {
 			r.l.Error(err, errStartCache)
@@ -178,6 +180,7 @@ func (r *fnctrlr) Start(ctx context.Context, name string, o controller.Options) 
 	}()
 	go func() {
 		<-r.mgr.Elected()
+		r.l.Info("start fncontroller controller")
 		r.err = ctrl.Start(ctx)
 		if r.err != nil {
 			r.l.Error(err, errStartController)
