@@ -167,7 +167,7 @@ func (r *fnctrlr) Start(ctx context.Context, name string, o controller.Options) 
 	}
 
 	go func() {
-		<-r.mgr.Elected()
+		//<-r.mgr.Elected()
 		r.l.Info("start fncontroller cache")
 		r.err = cache.Start(ctx)
 		if r.err != nil {
@@ -179,7 +179,7 @@ func (r *fnctrlr) Start(ctx context.Context, name string, o controller.Options) 
 		}
 	}()
 	go func() {
-		<-r.mgr.Elected()
+		//<-r.mgr.Elected()
 		r.l.Info("start fncontroller controller")
 		r.err = ctrl.Start(ctx)
 		if r.err != nil {
