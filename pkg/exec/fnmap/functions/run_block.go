@@ -135,7 +135,7 @@ func (r *block) run(ctx context.Context, i input.Input) (any, error) {
 	}
 
 	// debug
-	r.d.PrintVertices()
+	//r.d.PrintVertices()
 	r.l.Info("rootVertex", "name", r.d.GetRootVertex())
 	//fmt.Printf("block root Vertex: %s\n", r.d.GetRootVertex())
 

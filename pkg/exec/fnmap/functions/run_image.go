@@ -147,7 +147,7 @@ func (r *image) run(ctx context.Context, i input.Input) (any, error) {
 	}
 
 	r.l.Info("client", "exec client config", r.clients.Execclient.GetConfig())
-	fmt.Printf("exec client: %#v\n", r.clients.Execclient.GetConfig())
+	//fmt.Printf("exec client: %#v\n", r.clients.Execclient.GetConfig())
 
 	resp, err := r.clients.Execclient.Get().ExecuteFunction(ctx, &executorpb.ExecuteFunctionRequest{
 		ResourceContext: rCtx,

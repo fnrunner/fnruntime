@@ -99,7 +99,7 @@ func (r *fnExecConfig) exec(ctx context.Context, fnconfig ctrlcfgv1alpha1.Functi
 	if numItems > 0 && isRange {
 		r.initOutputFn(numItems)
 		for n, item := range items {
-			fmt.Printf("range items: n: %d, item %#v\n", n, item)
+			//fmt.Printf("range items: n: %d, item %#v\n", n, item)
 			// this is a protection to ensure we dont use the nil result in a range
 			if item.val != nil {
 				i.AddEntry("VALUE", item.val)
@@ -157,7 +157,7 @@ func runRange(exp string, i input.Input) ([]*item, error) {
 	for name, v := range i.Get() {
 		varNames = append(varNames, "$"+name)
 		varValues = append(varValues, v)
-		fmt.Printf("runRange variables: name: %s, value: %v\n", name, v)
+		//fmt.Printf("runRange variables: name: %s, value: %v\n", name, v)
 	}
 	//fmt.Printf("runRange varNames: %v, varValues: %v\n", varNames, varValues)
 	//fmt.Printf("runRange exp: %s\n", exp)
@@ -189,7 +189,7 @@ func runRange(exp string, i input.Input) ([]*item, error) {
 		if v == nil {
 			continue
 		}
-		fmt.Printf("runRange result item: %#v\n", v)
+		//fmt.Printf("runRange result item: %#v\n", v)
 		result = append(result, &item{val: v})
 	}
 
