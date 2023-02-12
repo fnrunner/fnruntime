@@ -3,9 +3,9 @@ module github.com/fnrunner/fnruntime
 go 1.19
 
 require (
-	github.com/fnrunner/fnproto v0.0.0-20230209103513-4a4d4cc8c977
+	github.com/fnrunner/fnproto v0.0.0-20230209122055-37d315ceebab
 	github.com/fnrunner/fnsdk v0.0.0-20230205112911-74f0d46d2b9a
-	github.com/fnrunner/fnsyntax v0.0.0-20230208101613-1601a2de177e
+	github.com/fnrunner/fnsyntax v0.0.0-20230212063658-e3ea4fcc9a10
 	github.com/fnrunner/fnutils v0.0.0-20230209070400-6f0bcb7ecd4e
 	github.com/fnrunner/fnwrapper v0.0.0-20230205192553-49f3f85088c1
 	github.com/go-logr/logr v1.2.3
@@ -22,7 +22,7 @@ require (
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
-	k8s.io/utils v0.0.0-20230202215443-34013725500c
+	k8s.io/utils v0.0.0-20230209194617-a36077c30491
 	sigs.k8s.io/controller-runtime v0.14.4
 	sigs.k8s.io/kustomize/kyaml v0.14.0
 	sigs.k8s.io/yaml v1.3.0
@@ -82,11 +82,11 @@ require (
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/oauth2 v0.4.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -97,7 +97,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.26.1 // indirect
 	k8s.io/component-base v0.26.1 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20230202010329-39b3636cbaa3 // indirect
+	k8s.io/kube-openapi v0.0.0-20230210211930-4b0756abdef5 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )
