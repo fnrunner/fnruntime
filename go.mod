@@ -6,7 +6,7 @@ require (
 	github.com/fnrunner/fnproto v0.0.0-20230209122055-37d315ceebab
 	github.com/fnrunner/fnsdk v0.0.0-20230205112911-74f0d46d2b9a
 	github.com/fnrunner/fnsyntax v0.0.0-20230212063658-e3ea4fcc9a10
-	github.com/fnrunner/fnutils v0.0.0-20230209070400-6f0bcb7ecd4e
+	github.com/fnrunner/fnutils v0.0.0-20230213165238-7cd0a217cf39
 	github.com/go-logr/logr v1.2.3
 	github.com/google/go-containerregistry v0.13.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510

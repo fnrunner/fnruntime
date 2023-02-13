@@ -45,7 +45,6 @@ func (r *GrpcServer) serverOpts(ctx context.Context) ([]grpc.ServerOption, error
 }
 
 func (r *GrpcServer) createTLSConfig(ctx context.Context) (*tls.Config, error) {
-
 	caPath := filepath.Join(r.config.CertDir, r.config.CaName)
 
 	ca, err := os.ReadFile(caPath)

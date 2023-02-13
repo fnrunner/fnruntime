@@ -43,6 +43,10 @@ func (r *input) AddEntry(k string, v any) {
 	r.i.AddEntry(k, v)
 }
 
+func (r *input) DeleteEntry(k string) {
+	r.i.DeleteEntry(k)
+}
+
 func (r *input) Add(i kv.KV) {
 	r.i.Add(i)
 }

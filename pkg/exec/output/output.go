@@ -55,6 +55,10 @@ func (r *output) AddEntry(k string, v any) {
 	r.o.AddEntry(k, v)
 }
 
+func (r *output) DeleteEntry(k string) {
+	r.o.DeleteEntry(k)
+}
+
 func (r *output) Add(o kv.KV) {
 	if o == nil {
 		return
