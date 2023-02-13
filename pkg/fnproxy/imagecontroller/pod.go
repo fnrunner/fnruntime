@@ -14,7 +14,7 @@ import (
 
 func (r *controller) applyPod(ctx context.Context, podName string) (*corev1.Pod, error) {
 	// apply pod
-	pod, err := r.client.CoreV1().Pods(r.namespace).Apply(ctx, r.buildPod(r.image, podName), metav1.ApplyOptions{})
+	pod, err := r.client.CoreV1().Pods(r.namespace).Apply(ctx, r.buildPod(r.image, podName), metav1.ApplyOptions{FieldManager: "application/apply-patch"})
 	if err != nil {
 		return nil, err
 	}

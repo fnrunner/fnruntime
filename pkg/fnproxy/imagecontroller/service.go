@@ -12,7 +12,7 @@ import (
 
 func (r *controller) applyService(ctx context.Context, podName string) (*corev1.Service, error) {
 	// apply service
-	return r.client.CoreV1().Services(r.namespace).Apply(ctx, r.buildService(r.image, podName), metav1.ApplyOptions{})
+	return r.client.CoreV1().Services(r.namespace).Apply(ctx, r.buildService(r.image, podName), metav1.ApplyOptions{FieldManager: "application/apply-patch"})
 }
 
 func (r *controller) deleteService(ctx context.Context, podName string) error {
