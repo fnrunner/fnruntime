@@ -121,10 +121,13 @@ func (r *proxy) Stop(ctx context.Context) error {
 func (r *proxy) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
-	if err := r.s.Start(ctx); err != nil {
-		r.l.Error(err, "cannot start grpcserver")
-		return err
-	}
+	go func() {
+		if err := r.s.Start(ctx); err != nil {
+			r.l.Error(err, "cannot start grpcserver")
+			//return err
+		}
+	}()
+
 	// create pods/svc
 	for _, image := range r.cache.List() {
 		if err := r.cache.Start(ctx, image); err != nil {
@@ -132,6 +135,7 @@ func (r *proxy) Start(ctx context.Context) error {
 			return err
 		}
 	}
+
 	return nil
 }
 

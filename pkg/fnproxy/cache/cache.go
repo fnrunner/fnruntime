@@ -325,7 +325,7 @@ func (r *cache) Start(ctx context.Context, image fnrunv1alpha1.Image) error {
 		CreateClientFn: r.SetClient,
 		DeleteClientFn: r.DeleteClient,
 	})
-	imgCtx.controller.Start(ctx)
+	go imgCtx.controller.Start(ctx)
 	return nil
 }
 
