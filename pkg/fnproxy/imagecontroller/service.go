@@ -23,7 +23,7 @@ func (r *controller) deleteService(ctx context.Context, podName string) error {
 func (r *controller) buildService(image fnrunv1alpha1.Image, podName string) *coreapplyv1.ServiceApplyConfiguration {
 	svc := &coreapplyv1.ServiceApplyConfiguration{}
 	svc.WithAPIVersion("v1")
-	svc.WithKind("Pod")
+	svc.WithKind("Service")
 	svc.WithNamespace(r.namespace)
 	svc.WithName(podName)
 	svc.WithLabels(map[string]string{
