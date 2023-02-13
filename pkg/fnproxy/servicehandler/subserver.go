@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/fnrunner/fnproto/pkg/service/servicepb"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/cache"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/cache"
 	"github.com/go-logr/logr"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	ctrl "sigs.k8s.io/controller-runtime"

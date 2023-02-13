@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/fnrunner/fnruntime/pkg/ctrlr/controllers/reconciler"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/fnproxy"
 	"github.com/fnrunner/fnruntime/pkg/ctrlr/fncontroller"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/fnproxy"
 
 	//"github.com/fnrunner/fnruntime/pkg/ctrlr/manager"
 	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
@@ -169,16 +169,19 @@ func main() {
 
 	fnProxy := fnproxy.New(&fnproxy.Config{
 		Clientset: c,
+		Images:    p.GetImages(),
 	})
 	go fnProxy.Start(ctx)
 
 	// create the fn pods based on the image information
-	for _, image := range p.GetImages() {
-		if err := fnProxy.CreatePod(ctx, *image); err != nil {
-			l.Error(err, "unable to create svc pod")
-			os.Exit(1)
+	/*
+		for _, image := range p.GetImages() {
+			if err := fnProxy.CreatePod(ctx, *image); err != nil {
+				l.Error(err, "unable to create svc pod")
+				os.Exit(1)
+			}
 		}
-	}
+	*/
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		l.Error(err, "unable to set up health check")

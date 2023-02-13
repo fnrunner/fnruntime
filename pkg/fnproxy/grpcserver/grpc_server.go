@@ -52,6 +52,8 @@ type GrpcServer struct {
 	//
 	// cached certificate
 	cm *sync.Mutex
+
+	cancel context.CancelFunc
 }
 
 // Health Handlers
@@ -84,6 +86,13 @@ func New(c Config, opts ...Option) *GrpcServer {
 	return s
 }
 
+func (r *GrpcServer) Stop() {
+	if r.cancel != nil {
+		r.cancel()
+		r.cancel = nil
+	}
+}
+
 func (r *GrpcServer) Start(ctx context.Context) error {
 	r.l = log.FromContext(ctx)
 	r.l.Info("grpc server start...")
@@ -94,6 +103,9 @@ func (r *GrpcServer) Start(ctx context.Context) error {
 		"keyName", r.config.KeyName,
 		"caName", r.config.CaName,
 	)
+	ctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
+
 	l, err := net.Listen("tcp", r.config.Address)
 	if err != nil {
 		return errors.Wrap(err, "cannot listen")

@@ -19,7 +19,7 @@ package functions
 import (
 	"context"
 
-	"github.com/fnrunner/fnruntime/internal/fnproxy/clients"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap"
 	"github.com/fnrunner/fnruntime/pkg/exec/input"
 	"github.com/fnrunner/fnruntime/pkg/exec/output"

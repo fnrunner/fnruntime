@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/fnrunner/fnruntime/internal/ctrlr/event"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/clients"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/builder"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap"
 	"github.com/fnrunner/fnruntime/pkg/exec/output"

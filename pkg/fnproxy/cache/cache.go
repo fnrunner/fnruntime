@@ -27,23 +27,30 @@ import (
 	"github.com/fnrunner/fnproto/pkg/executor/execclient"
 	"github.com/fnrunner/fnproto/pkg/service/svcclient"
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/watcher"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/imagecontroller"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 type Cache interface {
+	List() []fnrunv1alpha1.Image
 	Exists(image fnrunv1alpha1.Image) bool
 	Create(image fnrunv1alpha1.Image)
 	Delete(image fnrunv1alpha1.Image)
-	SetDigestAndEntrypoint(image fnrunv1alpha1.Image, de *fnrunv1alpha1.DigestAndEntrypoint) error
-	GetDigestAndEntrypoint(image fnrunv1alpha1.Image) *fnrunv1alpha1.DigestAndEntrypoint
-	SetPodName(image fnrunv1alpha1.Image, podName string) error
-	GetPodName(image fnrunv1alpha1.Image) string
+	SetConfigMap(image fnrunv1alpha1.Image, cm *corev1.ConfigMap) error
+	GetConfigMap(image fnrunv1alpha1.Image) *corev1.ConfigMap
+	//SetDigestAndEntrypoint(image fnrunv1alpha1.Image, de *fnrunv1alpha1.DigestAndEntrypoint) error
+	//GetDigestAndEntrypoint(image fnrunv1alpha1.Image) *fnrunv1alpha1.DigestAndEntrypoint
+	//SetPodName(image fnrunv1alpha1.Image, podName string) error
+	//GetPodName(image fnrunv1alpha1.Image) string
 	SetClient(image fnrunv1alpha1.Image, IPaddress string) error
 	DeleteClient(image fnrunv1alpha1.Image)
 	GetFnClient(image fnrunv1alpha1.Image) execclient.Client
 	GetSvcClient(image fnrunv1alpha1.Image) svcclient.Client
-	SetWatcher(image fnrunv1alpha1.Image, w watcher.Watcher) error
-	GetWatcher(image fnrunv1alpha1.Image) watcher.Watcher
+	//SetWatcher(image fnrunv1alpha1.Image, w watcher.Watcher) error
+	//GetWatcher(image fnrunv1alpha1.Image) watcher.Watcher
+	Start(ctx context.Context, image fnrunv1alpha1.Image) error
+	Stop(ctx context.Context, image fnrunv1alpha1.Image) error
 }
 
 func NewCache() Cache {
@@ -53,18 +60,31 @@ func NewCache() Cache {
 }
 
 type cache struct {
-	m sync.RWMutex
-	d map[fnrunv1alpha1.Image]*imageCtx
+	client *kubernetes.Clientset
+	m      sync.RWMutex
+	d      map[fnrunv1alpha1.Image]*imageCtx
 }
 
 type imageCtx struct {
 	imageType  fnrunv1alpha1.ImageKind
 	de         *fnrunv1alpha1.DigestAndEntrypoint
 	podName    string
+	cm         *corev1.ConfigMap
 	execclient execclient.Client
 	svcclient  svcclient.Client
 	cancel     context.CancelFunc
-	watcher    watcher.Watcher
+	//watcher    watcher.Watcher
+	controller imagecontroller.Controller
+}
+
+func (r *cache) List() []fnrunv1alpha1.Image {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	images := make([]fnrunv1alpha1.Image, 0, len(r.d))
+	for image := range r.d {
+		images = append(images, image)
+	}
+	return images
 }
 
 func (r *cache) Exists(image fnrunv1alpha1.Image) bool {
@@ -95,6 +115,29 @@ func (r *cache) Delete(image fnrunv1alpha1.Image) {
 		}
 	}
 	delete(r.d, image)
+}
+
+func (r *cache) SetConfigMap(image fnrunv1alpha1.Image, cm *corev1.ConfigMap) error {
+	r.m.Lock()
+	defer r.m.Unlock()
+	if _, ok := r.d[image]; !ok {
+		return errors.New("cannot set cm, image entry is not initialized")
+	}
+	r.d[image].cm = cm
+	return nil
+}
+
+func (r *cache) GetConfigMap(image fnrunv1alpha1.Image) *corev1.ConfigMap {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	c, ok := r.d[image]
+	if !ok {
+		return nil
+	}
+	if c.cm == nil {
+		return nil
+	}
+	return c.cm
 }
 
 func (r *cache) SetDigestAndEntrypoint(image fnrunv1alpha1.Image, de *fnrunv1alpha1.DigestAndEntrypoint) error {
@@ -230,6 +273,7 @@ func (r *cache) GetSvcClient(image fnrunv1alpha1.Image) svcclient.Client {
 	return c.svcclient
 }
 
+/*
 func (r *cache) SetWatcher(image fnrunv1alpha1.Image, w watcher.Watcher) error {
 	r.m.Lock()
 	defer r.m.Unlock()
@@ -249,4 +293,51 @@ func (r *cache) GetWatcher(image fnrunv1alpha1.Image) watcher.Watcher {
 		return nil
 	}
 	return c.watcher
+}
+*/
+
+func (r *cache) Start(ctx context.Context, image fnrunv1alpha1.Image) error {
+	r.m.Lock()
+	defer r.m.Unlock()
+	imgCtx, ok := r.d[image]
+	if !ok {
+		return errors.New("cannot start, image entry is not initialized")
+	}
+
+	var err error
+	imgCtx.de, err = getImageDigestAndEntrypoint(ctx, image.Name)
+	if err != nil {
+		return err
+
+	}
+
+	imgCtx.podName, err = podName(image.Name, imgCtx.de.Digest)
+	if err != nil {
+		return err
+	}
+
+	imgCtx.controller = imagecontroller.New(&imagecontroller.Config{
+		Client:         r.client,
+		Image:          image,
+		PodName:        imgCtx.podName,
+		De:             imgCtx.de,
+		ConfigMap:      imgCtx.cm,
+		CreateClientFn: r.SetClient,
+		DeleteClientFn: r.DeleteClient,
+	})
+	imgCtx.controller.Start(ctx)
+	return nil
+}
+
+func (r *cache) Stop(ctx context.Context, image fnrunv1alpha1.Image) error {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	imgCtx, ok := r.d[image]
+	if !ok {
+		return nil
+	}
+	if imgCtx.controller != nil {
+		return imgCtx.controller.Stop(ctx)
+	}
+	return nil
 }

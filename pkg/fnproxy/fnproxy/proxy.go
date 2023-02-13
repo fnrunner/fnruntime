@@ -18,45 +18,36 @@ package fnproxy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strconv"
 
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/cache"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/exechandler"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/grpcserver"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/healthhandler"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/servicehandler"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/watcher"
-	"github.com/fnrunner/fnutils/pkg/meta"
-	"github.com/fnrunner/fnwrapper/pkg/fnwrapper"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/cache"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/exechandler"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/grpcserver"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/healthhandler"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/servicehandler"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Config struct {
 	Clientset      *kubernetes.Clientset
 	FnWrapperImage string
+	Images         []*fnrunv1alpha1.Image
+	ConfigMap      *corev1.ConfigMap
 }
 
-type PodProxy interface {
-	Start(ctx context.Context)
-	CreatePod(ctx context.Context, image fnrunv1alpha1.Image) error
-	DeletePod(ctx context.Context, image fnrunv1alpha1.Image) error
+type FnProxy interface {
+	Start(ctx context.Context) error
+	Stop(ctx context.Context) error
+	//CreatePod(ctx context.Context, image fnrunv1alpha1.Image) error
+	//DeletePod(ctx context.Context, image fnrunv1alpha1.Image) error
 }
 
-func New(cfg *Config) PodProxy {
+func New(cfg *Config) FnProxy {
 	l := ctrl.Log.WithName("imageproxy")
 
 	namespace := os.Getenv("POD_NAMESPACE")
@@ -70,6 +61,12 @@ func New(cfg *Config) PodProxy {
 	}
 
 	c := cache.NewCache()
+	for _, image := range cfg.Images {
+		c.Create(*image)
+		// since we created the image here we dont have to validate the error
+		// when setting the configmap
+		c.SetConfigMap(*image, cfg.ConfigMap)
+	}
 
 	hh := healthhandler.New()
 	sh := servicehandler.New(c)
@@ -93,6 +90,7 @@ func New(cfg *Config) PodProxy {
 		fnWrapperImage: fnWrapperImage,
 		cache:          c,
 		l:              l,
+		cm:             cfg.ConfigMap,
 	}
 }
 
@@ -103,15 +101,41 @@ type proxy struct {
 	fnWrapperImage string
 	cache          cache.Cache
 	l              logr.Logger
+	cm             *corev1.ConfigMap
+	cancel         context.CancelFunc
 }
 
-func (r *proxy) Start(ctx context.Context) {
+func (r *proxy) Stop(ctx context.Context) error {
+	// stop grpc and imager controller servers
+	r.cancel()
+
+	// delete pods/svcs
+	for _, image := range r.cache.List() {
+		if err := r.cache.Stop(ctx, image); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *proxy) Start(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
 	if err := r.s.Start(ctx); err != nil {
 		r.l.Error(err, "cannot start grpcserver")
-		os.Exit(1)
+		return err
 	}
+	// create pods/svc
+	for _, image := range r.cache.List() {
+		if err := r.cache.Start(ctx, image); err != nil {
+			r.l.Error(err, "cannot start image controller")
+			return err
+		}
+	}
+	return nil
 }
 
+/*
 func (r *proxy) DeletePod(ctx context.Context, image fnrunv1alpha1.Image) error {
 	r.l.WithValues("image", image)
 
@@ -180,8 +204,15 @@ func (r *proxy) getOrCreatePod(ctx context.Context, image fnrunv1alpha1.Image) (
 	}
 	r.cache.SetPodName(image, podName)
 
-	labelSelector := metav1.LabelSelector{MatchLabels: map[string]string{fnrunv1alpha1.FunctionLabelKey: podName}}
-	podList, err := r.clientset.CoreV1().Pods(r.namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.Set(labelSelector.MatchLabels).String()})
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			fnrunv1alpha1.FunctionLabelKey: podName,
+		}}
+	podList, err := r.clientset.CoreV1().Pods(r.namespace).List(
+		ctx,
+		metav1.ListOptions{
+			LabelSelector: labels.Set(labelSelector.MatchLabels).String(),
+		})
 	if err != nil {
 		r.l.Error(err, "cannot list pods")
 		return types.NamespacedName{}, err
@@ -245,6 +276,7 @@ func (r *proxy) buildFnPod(image fnrunv1alpha1.Image, podName string) (*corev1.P
 			Labels: map[string]string{
 				fnrunv1alpha1.FunctionLabelKey: podName,
 			},
+			OwnerReferences: []metav1.OwnerReference{},
 		},
 		Spec: corev1.PodSpec{
 			InitContainers: []corev1.Container{
@@ -374,3 +406,4 @@ func (r *proxy) deleteClient(image fnrunv1alpha1.Image) {
 func (r *proxy) createClient(image fnrunv1alpha1.Image, podIP string) {
 	r.cache.SetClient(image, podIP)
 }
+*/

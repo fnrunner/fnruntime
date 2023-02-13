@@ -17,7 +17,7 @@ import (
 	"context"
 
 	"github.com/fnrunner/fnproto/pkg/executor/executorpb"
-	"github.com/fnrunner/fnruntime/internal/fnproxy/cache"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/cache"
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 )

@@ -17,7 +17,7 @@ limitations under the License.
 package builder
 
 import (
-	"github.com/fnrunner/fnruntime/internal/fnproxy/clients"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/exechandler"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap/functions"

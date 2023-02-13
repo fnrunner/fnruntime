@@ -7,7 +7,6 @@ require (
 	github.com/fnrunner/fnsdk v0.0.0-20230205112911-74f0d46d2b9a
 	github.com/fnrunner/fnsyntax v0.0.0-20230212063658-e3ea4fcc9a10
 	github.com/fnrunner/fnutils v0.0.0-20230209070400-6f0bcb7ecd4e
-	github.com/fnrunner/fnwrapper v0.0.0-20230205192553-49f3f85088c1
 	github.com/go-logr/logr v1.2.3
 	github.com/google/go-containerregistry v0.13.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -22,7 +21,6 @@ require (
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
-	k8s.io/utils v0.0.0-20230209194617-a36077c30491
 	sigs.k8s.io/controller-runtime v0.14.4
 	sigs.k8s.io/kustomize/kyaml v0.14.0
 	sigs.k8s.io/yaml v1.3.0
@@ -77,6 +75,7 @@ require (
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
@@ -98,6 +97,7 @@ require (
 	k8s.io/component-base v0.26.1 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230210211930-4b0756abdef5 // indirect
+	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )

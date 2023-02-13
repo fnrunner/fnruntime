@@ -16,6 +16,7 @@ limitations under the License.
 
 package watcher
 
+/*
 import (
 	"context"
 	"time"
@@ -150,3 +151,4 @@ func (r *watcher) Query(ctx context.Context) (string, error) {
 	}
 	return "", nil
 }
+*/
