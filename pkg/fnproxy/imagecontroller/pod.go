@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreapplyv1 "k8s.io/client-go/applyconfigurations/core/v1"
+	metaapplyv1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 func (r *controller) applyPod(ctx context.Context, podName string) (*corev1.Pod, error) {
@@ -52,7 +53,14 @@ func (r *controller) buildPod(image fnrunv1alpha1.Image, podName string) *coreap
 	pod.WithLabels(map[string]string{
 		fnrunv1alpha1.FunctionLabelKey: podName,
 	})
-	pod.WithOwnerReferences() // TODO
+
+	ownerRef := &metaapplyv1.OwnerReferenceApplyConfiguration{}
+	ownerRef.WithAPIVersion("v1")
+	ownerRef.WithKind("ConfigMap")
+	ownerRef.WithName(r.cm.GetName())
+	ownerRef.WithUID(r.cm.GetUID())
+	ownerRef.WithController(true)
+	pod.WithOwnerReferences(ownerRef)
 
 	// probe
 	probe := &coreapplyv1.ProbeApplyConfiguration{}

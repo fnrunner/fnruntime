@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	coreapplyv1 "k8s.io/client-go/applyconfigurations/core/v1"
+	metaapplyv1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 func (r *controller) applyService(ctx context.Context, podName string) (*corev1.Service, error) {
@@ -29,7 +30,13 @@ func (r *controller) buildService(image fnrunv1alpha1.Image, podName string) *co
 	svc.WithLabels(map[string]string{
 		fnrunv1alpha1.FunctionLabelKey: podName,
 	})
-	svc.WithOwnerReferences() // TODO
+	ownerRef := &metaapplyv1.OwnerReferenceApplyConfiguration{}
+	ownerRef.WithAPIVersion("v1")
+	ownerRef.WithKind("ConfigMap")
+	ownerRef.WithName(r.cm.GetName())
+	ownerRef.WithUID(r.cm.GetUID())
+	ownerRef.WithController(true)
+	svc.WithOwnerReferences(ownerRef)
 
 	// spec
 	svcSpec := &coreapplyv1.ServiceSpecApplyConfiguration{}
