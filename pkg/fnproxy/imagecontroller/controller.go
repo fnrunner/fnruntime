@@ -112,7 +112,7 @@ func (r *controller) Start(ctx context.Context) {
 				time.Sleep(defaultWaitTime)
 				goto INIT
 			}
-			goto INIT
+			//goto INIT
 		case <-ctx.Done():
 			return
 		}
@@ -131,7 +131,7 @@ func (r *controller) start(ctx context.Context, podName string) error {
 			Watch:         true,
 		})
 	if err != nil {
-		r.l.Error(err, "cannot create podwatch")
+		r.l.Error(err, "cannot create pod watch")
 		return err
 	}
 	wsi, err := r.client.CoreV1().Services(r.namespace).Watch(
@@ -141,7 +141,7 @@ func (r *controller) start(ctx context.Context, podName string) error {
 			Watch:         true,
 		})
 	if err != nil {
-		r.l.Error(err, "cannot create podwatch")
+		r.l.Error(err, "cannot create service watch")
 		return err
 	}
 
