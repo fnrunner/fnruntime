@@ -60,7 +60,7 @@ func New(cfg *Config) FnProxy {
 		fnWrapperImage = fnrunv1alpha1.DefaultFnWrapperImage
 	}
 
-	c := cache.NewCache()
+	c := cache.NewCache(cfg.Clientset)
 	for _, image := range cfg.Images {
 		c.Create(*image)
 		// since we created the image here we dont have to validate the error

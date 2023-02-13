@@ -53,8 +53,9 @@ type Cache interface {
 	Stop(ctx context.Context, image fnrunv1alpha1.Image) error
 }
 
-func NewCache() Cache {
+func NewCache(client *kubernetes.Clientset) Cache {
 	return &cache{
+		client: client,
 		d: map[fnrunv1alpha1.Image]*imageCtx{},
 	}
 }
