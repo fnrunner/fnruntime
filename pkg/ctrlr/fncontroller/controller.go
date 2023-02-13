@@ -46,7 +46,7 @@ type FnController interface {
 	IsRunning() bool
 	Error() error
 	Start(ctx context.Context, name string, o controller.Options) error
-	Stop()
+	Stop(ctx context.Context)
 }
 
 type fnctrlr struct {
@@ -81,7 +81,7 @@ func (r *fnctrlr) Error() error {
 	return r.err
 }
 
-func (r *fnctrlr) Stop() {
+func (r *fnctrlr) Stop(ctx context.Context) {
 	if r.cancel != nil {
 		r.cancel()
 		r.cancel = nil
