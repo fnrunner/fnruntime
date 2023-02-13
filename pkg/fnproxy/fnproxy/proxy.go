@@ -42,7 +42,7 @@ type Config struct {
 
 type FnProxy interface {
 	Start(ctx context.Context) error
-	Stop(ctx context.Context) error
+	Stop(ctx context.Context)
 	//CreatePod(ctx context.Context, image fnrunv1alpha1.Image) error
 	//DeletePod(ctx context.Context, image fnrunv1alpha1.Image) error
 }
@@ -105,7 +105,7 @@ type proxy struct {
 	cancel         context.CancelFunc
 }
 
-func (r *proxy) Stop(ctx context.Context) error {
+func (r *proxy) Stop(ctx context.Context) {
 	// delete pods/svcs -> happens through ownerreference
 	/*
 	for _, image := range r.cache.List() {
@@ -116,7 +116,7 @@ func (r *proxy) Stop(ctx context.Context) error {
 	*/
 	// stop grpc and imager controller servers
 	r.cancel()
-	return nil
+	//return nil
 }
 
 func (r *proxy) Start(ctx context.Context) error {
