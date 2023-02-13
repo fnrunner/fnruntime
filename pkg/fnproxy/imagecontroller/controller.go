@@ -80,14 +80,16 @@ type controller struct {
 }
 
 func (r *controller) Stop(ctx context.Context) error {
-	if err := r.deletePod(ctx, r.podName); err != nil {
-		r.l.Error(err, "cannot delete pod")
-		return err
-	}
-	if err := r.deleteService(ctx, r.podName); err != nil {
-		r.l.Error(err, "cannot delete service")
-		return err
-	}
+	/*
+		if err := r.deletePod(ctx, r.podName); err != nil {
+			r.l.Error(err, "cannot delete pod")
+			return err
+		}
+		if err := r.deleteService(ctx, r.podName); err != nil {
+			r.l.Error(err, "cannot delete service")
+			return err
+		}
+	*/
 	return nil
 }
 

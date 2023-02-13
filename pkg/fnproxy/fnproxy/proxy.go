@@ -106,12 +106,14 @@ type proxy struct {
 }
 
 func (r *proxy) Stop(ctx context.Context) error {
-	// delete pods/svcs
+	// delete pods/svcs -> happens through ownerreference
+	/*
 	for _, image := range r.cache.List() {
 		if err := r.cache.Stop(ctx, image); err != nil {
 			return err
 		}
 	}
+	*/
 	// stop grpc and imager controller servers
 	r.cancel()
 	return nil
