@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/fnrunner/fnproto/pkg/service/servicepb"
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/cache"
+	"github.com/fnrunner/fnruntime/pkg/store/ctrlstore"
 	"github.com/go-logr/logr"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,15 +31,15 @@ type SubServer interface {
 	DeleteResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*emptypb.Empty, error)
 }
 
-func New(c cache.Cache) SubServer {
+func New(c ctrlstore.Store) SubServer {
 	r := &subServer{
-		l: ctrl.Log.WithName("subserverService"),
-		c: c,
+		l:         ctrl.Log.WithName("subserverService"),
+		ctrlStore: c,
 	}
 	return r
 }
 
 type subServer struct {
-	l logr.Logger
-	c cache.Cache
+	l         logr.Logger
+	ctrlStore ctrlstore.Store
 }

@@ -16,6 +16,7 @@ limitations under the License.
 
 package cache
 
+/*
 import (
 	"context"
 	"errors"
@@ -274,29 +275,6 @@ func (r *cache) GetSvcClient(image fnrunv1alpha1.Image) svcclient.Client {
 	return c.svcclient
 }
 
-/*
-func (r *cache) SetWatcher(image fnrunv1alpha1.Image, w watcher.Watcher) error {
-	r.m.Lock()
-	defer r.m.Unlock()
-	imgCtx, ok := r.d[image]
-	if !ok {
-		return errors.New("cannot set watcher, image entry is not initialized")
-	}
-	imgCtx.watcher = w
-	return nil
-}
-
-func (r *cache) GetWatcher(image fnrunv1alpha1.Image) watcher.Watcher {
-	r.m.RLock()
-	defer r.m.RUnlock()
-	c, ok := r.d[image]
-	if !ok {
-		return nil
-	}
-	return c.watcher
-}
-*/
-
 func (r *cache) Start(ctx context.Context, image fnrunv1alpha1.Image) error {
 	r.m.Lock()
 	defer r.m.Unlock()
@@ -342,3 +320,4 @@ func (r *cache) Stop(ctx context.Context, image fnrunv1alpha1.Image) error {
 	}
 	return nil
 }
+*/

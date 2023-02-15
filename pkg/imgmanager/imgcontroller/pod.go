@@ -1,4 +1,4 @@
-package imagecontroller
+package imgcontroller
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func (r *controller) applyPod(ctx context.Context, podName string) (*corev1.Pod,
 	}
 	for _, cond := range pod.Status.Conditions {
 		if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-			r.createClientFn(r.image, pod.Status.PodIP)
+			r.createClientFn(r.image, podName, pod.Status.PodIP)
 			return pod, nil
 		}
 		r.deleteClientFn(r.image)

@@ -22,25 +22,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/fnrunner/fnruntime/pkg/ctrlr/controllers/reconciler"
-	"github.com/fnrunner/fnruntime/pkg/ctrlr/fncontroller"
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/fnproxy"
-
-	//"github.com/fnrunner/fnruntime/pkg/ctrlr/manager"
-	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
-	"github.com/fnrunner/fnsyntax/pkg/ccsyntax"
+	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
+	"github.com/fnrunner/fnruntime/pkg/fnmanager/fnmanager"
 	"github.com/pkg/profile"
 	"go.uber.org/zap/zapcore"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/yaml"
 )
 
 /*
@@ -61,6 +48,8 @@ func main() {
 	var profiler bool
 	var concurrency int
 	var pollInterval time.Duration
+	var domain string
+	var uniqueID string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -70,6 +59,8 @@ func main() {
 	flag.DurationVar(&pollInterval, "poll-interval", 1*time.Minute, "Poll interval controls how often an individual resource should be checked for drift.")
 	flag.BoolVar(&debug, "debug", true, "Enable debug")
 	flag.BoolVar(&profiler, "profile", false, "Enable profiler")
+	flag.StringVar(&domain, "domain", fnrunv1alpha1.Domain, "The domain the operator belongs to")
+	flag.StringVar(&uniqueID, "unique-id", "abcd1234", "The unique id used in leader election")
 	opts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.ISO8601TimeEncoder,
@@ -78,7 +69,7 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-	l := ctrl.Log.WithName("fnruntime")
+	l := ctrl.Log.WithName("fn manager")
 
 	if profiler {
 		defer profile.Start().Stop()
@@ -87,114 +78,129 @@ func main() {
 		}()
 	}
 
-	mgr, err := manager.New(ctrl.GetConfigOrDie(), manager.Options{
-		Scheme:    runtime.NewScheme(),
-		Namespace: os.Getenv("POD_NAMESPACE"),
-		//MetricsBindAddress: metricsAddr,
-		//Port: 9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "c6789sd34.fnrun.io",
-	})
-	if err != nil {
-		l.Error(err, "unable to create manager")
-		os.Exit(1)
-	}
-
-	fb, err := os.ReadFile(yamlFile)
-	if err != nil {
-		l.Error(err, "cannot read file")
-		os.Exit(1)
-	}
-	l.Info("read file")
-
-	ctrlcfg := &ctrlcfgv1alpha1.ControllerConfig{}
-	if err := yaml.Unmarshal(fb, ctrlcfg); err != nil {
-		l.Error(err, "cannot unmarshal")
-		os.Exit(1)
-	}
-	l.Info("unmarshal succeeded", "ctrlcfg", ctrlcfg.Spec.For)
-
-	p, result := ccsyntax.NewParser(ctrlcfg)
-	if len(result) > 0 {
-		l.Error(err, "ccsyntax validation failed", "result", result)
-		os.Exit(1)
-	}
-	l.Info("ccsyntax validation succeeded")
-
-	ceCtx, result := p.Parse()
-	if len(result) != 0 {
-		for _, res := range result {
-			l.Error(err, "ccsyntax parsing failed", "result", res)
-		}
-		os.Exit(1)
-	}
-	l.Info("ccsyntax parsing succeeded")
-
-	gvks, result := p.GetExternalResources()
-	if len(result) > 0 {
-		l.Error(err, "ccsyntax get external resources failed", "result", result)
-		os.Exit(1)
-	}
-	// validate if we can resolve the gvr to gvk in the system
-	for _, gvk := range gvks {
-		gvk, err := mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}, gvk.Version)
-		if err != nil {
-			l.Error(err, "ccsyntax get gvk mapping in api server", "result", result)
-			os.Exit(1)
-		}
-		l.Info("gvk", "value", gvk)
-	}
-
-	ge := make(chan event.GenericEvent)
-
-	l.Info("setup fnruntime controller")
 	ctx := ctrl.SetupSignalHandler()
 
-	fnc := fncontroller.New(mgr, ceCtx, ge)
-	fnc.Start(ctx, ctrlcfg.Name, controller.Options{
-		Reconciler: reconciler.New(&reconciler.Config{
-			Client:       mgr.GetClient(),
-			PollInterval: 1 * time.Minute,
-			CeCtx:        ceCtx,
-		}),
-	},
-	)
-
-	c, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
+	mgr, err := fnmanager.New(&fnmanager.Config{
+		Domain:               domain,
+		UniqueID:             uniqueID,
+		ConfigMaps:           []string{},
+		MetricAddress:        metricsAddr,
+		ProbeAddress:         probeAddr,
+		EnableLeaderElection: enableLeaderElection,
+		Concurrency:          concurrency,
+		PollInterval:         pollInterval,
+	})
 	if err != nil {
-		l.Error(err, "unable to create clientset")
+		l.Error(err, "cannot create fn manager")
+		os.Exit(1)
+	}
+	if err := mgr.Start(ctx); err != nil {
+		l.Error(err, "cannot run fn manager")
 		os.Exit(1)
 	}
 
-	fnProxy := fnproxy.New(&fnproxy.Config{
-		Clientset: c,
-		Images:    p.GetImages(),
-	})
-	go fnProxy.Start(ctx)
-
-	// create the fn pods based on the image information
 	/*
-		for _, image := range p.GetImages() {
-			if err := fnProxy.CreatePod(ctx, *image); err != nil {
-				l.Error(err, "unable to create svc pod")
+		mgr, err := manager.New(ctrl.GetConfigOrDie(), manager.Options{
+			Scheme:    runtime.NewScheme(),
+			Namespace: os.Getenv("POD_NAMESPACE"),
+			//MetricsBindAddress: metricsAddr,
+			//Port: 9443,
+			HealthProbeBindAddress: probeAddr,
+			LeaderElection:         enableLeaderElection,
+			LeaderElectionID:       "c6789sd34.fnrun.io",
+		})
+		if err != nil {
+			l.Error(err, "unable to create manager")
+			os.Exit(1)
+		}
+
+		fb, err := os.ReadFile(yamlFile)
+		if err != nil {
+			l.Error(err, "cannot read file")
+			os.Exit(1)
+		}
+		l.Info("read file")
+
+		ctrlcfg := &ctrlcfgv1alpha1.ControllerConfig{}
+		if err := yaml.Unmarshal(fb, ctrlcfg); err != nil {
+			l.Error(err, "cannot unmarshal")
+			os.Exit(1)
+		}
+		l.Info("unmarshal succeeded", "ctrlcfg", ctrlcfg.Spec.For)
+
+		p, result := ccsyntax.NewParser(ctrlcfg)
+		if len(result) > 0 {
+			l.Error(err, "ccsyntax validation failed", "result", result)
+			os.Exit(1)
+		}
+		l.Info("ccsyntax validation succeeded")
+
+		ceCtx, result := p.Parse()
+		if len(result) != 0 {
+			for _, res := range result {
+				l.Error(err, "ccsyntax parsing failed", "result", res)
+			}
+			os.Exit(1)
+		}
+		l.Info("ccsyntax parsing succeeded")
+
+		gvks, result := p.GetExternalResources()
+		if len(result) > 0 {
+			l.Error(err, "ccsyntax get external resources failed", "result", result)
+			os.Exit(1)
+		}
+		// validate if we can resolve the gvr to gvk in the system
+		for _, gvk := range gvks {
+			gvk, err := mgr.GetRESTMapper().RESTMapping(schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}, gvk.Version)
+			if err != nil {
+				l.Error(err, "ccsyntax get gvk mapping in api server", "result", result)
 				os.Exit(1)
 			}
+			l.Info("gvk", "value", gvk)
+		}
+
+		ge := make(chan event.GenericEvent)
+
+		l.Info("setup fnruntime controller")
+		ctx := ctrl.SetupSignalHandler()
+
+		fnc := fncontroller.New(mgr, ceCtx, ge)
+		fnc.Start(ctx, ctrlcfg.Name, controller.Options{
+			Reconciler: reconciler.New(&reconciler.Config{
+				Client:       mgr.GetClient(),
+				PollInterval: 1 * time.Minute,
+				CeCtx:        ceCtx,
+			}),
+		},
+		)
+
+		c, err := kubernetes.NewForConfig(ctrl.GetConfigOrDie())
+		if err != nil {
+			l.Error(err, "unable to create clientset")
+			os.Exit(1)
+		}
+
+		fnProxy := fnproxy.New(&fnproxy.Config{
+			Clientset: c,
+			Images:    p.GetImages(),
+		})
+		go fnProxy.Start(ctx)
+
+
+		if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+			l.Error(err, "unable to set up health check")
+			os.Exit(1)
+		}
+		if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+			l.Error(err, "unable to set up ready check")
+			os.Exit(1)
+		}
+
+		l.Info("starting controller manager")
+		if err := mgr.Start(ctx); err != nil {
+			l.Error(err, "cannot run manager")
+			os.Exit(1)
 		}
 	*/
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		l.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		l.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-
-	l.Info("starting controller manager")
-	if err := mgr.Start(ctx); err != nil {
-		l.Error(err, "cannot run manager")
-		os.Exit(1)
-	}
 }

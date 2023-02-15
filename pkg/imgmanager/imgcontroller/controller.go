@@ -1,4 +1,4 @@
-package imagecontroller
+package imgcontroller
 
 import (
 	"context"
@@ -16,21 +16,22 @@ import (
 )
 
 const (
-	defaultNamespace = "default"
-	defaultWaitTime  = time.Second * 5
-	finalizer        = "fnrun.io/finalizer"
+	defaultWaitTime = time.Second * 5
+	finalizer       = "fnrun.io/finalizer"
 )
 
-type CreateClientFn func(image fnrunv1alpha1.Image, podIP string) error
+type CreateClientFn func(image fnrunv1alpha1.Image, podName, podIP string) error
 type DeleteCLientFn func(image fnrunv1alpha1.Image)
 
 type Controller interface {
-	Start(ctx context.Context)
-	Stop(ctx context.Context) error
+	Start(ctx context.Context) error
+	//Stop(ctx context.Context) error
 }
 
 type Config struct {
+	Namespace      string
 	Client         *kubernetes.Clientset
+	ControllerName string
 	Image          fnrunv1alpha1.Image
 	PodName        string
 	De             *fnrunv1alpha1.DigestAndEntrypoint
@@ -41,21 +42,18 @@ type Config struct {
 
 func New(cfg *Config) Controller {
 	l := ctrl.Log.WithName("configmap controller").WithValues(
+		"controllerName", cfg.ControllerName,
 		"image", cfg.Image,
 	)
-	namespace := os.Getenv("POD_NAMESPACE")
-	if namespace == "" {
-		namespace = defaultNamespace
-	}
 	fnWrapperImage := os.Getenv(fnrunv1alpha1.EnvFnWrapperImage)
 	if fnWrapperImage == "" {
 		fnWrapperImage = fnrunv1alpha1.DefaultFnWrapperImage
 	}
 
 	return &controller{
-		client:         cfg.Client,
-		namespace:      namespace,
-		image:          cfg.Image,
+		client:    cfg.Client,
+		namespace: cfg.Namespace,
+		//image:          cfg.Image,
 		fnWrapperImage: fnWrapperImage,
 		cm:             cfg.ConfigMap,
 		l:              l,
@@ -79,8 +77,9 @@ type controller struct {
 	de             *fnrunv1alpha1.DigestAndEntrypoint
 }
 
+/*
 func (r *controller) Stop(ctx context.Context) error {
-	/*
+
 		if err := r.deletePod(ctx, r.podName); err != nil {
 			r.l.Error(err, "cannot delete pod")
 			return err
@@ -89,11 +88,12 @@ func (r *controller) Stop(ctx context.Context) error {
 			r.l.Error(err, "cannot delete service")
 			return err
 		}
-	*/
+
 	return nil
 }
+*/
 
-func (r *controller) Start(ctx context.Context) {
+func (r *controller) Start(ctx context.Context) error {
 	for {
 		select {
 		default:
@@ -116,7 +116,7 @@ func (r *controller) Start(ctx context.Context) {
 			}
 			//goto INIT
 		case <-ctx.Done():
-			return
+			return nil
 		}
 	}
 }

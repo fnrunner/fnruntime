@@ -27,7 +27,12 @@ import (
 func (r *subServer) ApplyResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*servicepb.FunctionServiceResponse, error) {
 	r.l.Info("service apply", "req", req)
 
-	svcclient := r.c.GetSvcClient(fnrunv1alpha1.Image{Name: req.GetImage(), Kind: fnrunv1alpha1.ImageKindService})
+	imageStore := r.ctrlStore.GetImageStore(req.GetController())
+	if imageStore == nil {
+		return &servicepb.FunctionServiceResponse{}, ErrClientNotready
+	}
+
+	svcclient := imageStore.GetSvcClient(fnrunv1alpha1.Image{Name: req.GetImage(), Kind: fnrunv1alpha1.ImageKindService})
 	if svcclient == nil {
 		return &servicepb.FunctionServiceResponse{}, ErrClientNotready
 	}
@@ -35,9 +40,14 @@ func (r *subServer) ApplyResource(ctx context.Context, req *servicepb.FunctionSe
 }
 
 func (r *subServer) DeleteResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*emptypb.Empty, error) {
-	r.l.Info("service apply", "req", req)
+	r.l.Info("service delete", "req", req)
 
-	svcclient := r.c.GetSvcClient(fnrunv1alpha1.Image{Name: req.GetImage(), Kind: fnrunv1alpha1.ImageKindService})
+	imageStore := r.ctrlStore.GetImageStore(req.GetController())
+	if imageStore == nil {
+		return &emptypb.Empty{}, ErrClientNotready
+	}
+
+	svcclient := imageStore.GetSvcClient(fnrunv1alpha1.Image{Name: req.GetImage(), Kind: fnrunv1alpha1.ImageKindService})
 	if svcclient == nil {
 		return &emptypb.Empty{}, ErrClientNotready
 	}

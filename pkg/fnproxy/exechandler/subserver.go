@@ -17,7 +17,7 @@ import (
 	"context"
 
 	"github.com/fnrunner/fnproto/pkg/executor/executorpb"
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/cache"
+	"github.com/fnrunner/fnruntime/pkg/store/ctrlstore"
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -26,15 +26,15 @@ type SubServer interface {
 	ExecuteFuntion(ctx context.Context, in *executorpb.ExecuteFunctionRequest) (*executorpb.ExecuteFunctionResponse, error)
 }
 
-func New(c cache.Cache) SubServer {
+func New(c ctrlstore.Store) SubServer {
 	r := &subServer{
-		l: ctrl.Log.WithName("subserverExec"),
-		c: c,
+		l:         ctrl.Log.WithName("subserverExec"),
+		ctrlStore: c,
 	}
 	return r
 }
 
 type subServer struct {
-	l logr.Logger
-	c cache.Cache
+	l         logr.Logger
+	ctrlStore ctrlstore.Store
 }

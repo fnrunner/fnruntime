@@ -1,4 +1,4 @@
-package imagecontroller
+package imgcontroller
 
 import (
 	"context"

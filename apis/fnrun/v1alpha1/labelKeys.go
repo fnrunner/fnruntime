@@ -18,6 +18,7 @@ package v1alpha1
 
 const (
 	//labels
+	Domain            = "fnrun.io"
 	FunctionLabelKey  = "fnrun.io/image"
 	ConfigMapLabelKey = "fnrun.io/configmap"
 

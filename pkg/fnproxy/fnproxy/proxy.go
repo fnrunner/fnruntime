@@ -19,58 +19,60 @@ package fnproxy
 import (
 	"context"
 	"fmt"
-	"os"
 
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/cache"
 	"github.com/fnrunner/fnruntime/pkg/fnproxy/exechandler"
 	"github.com/fnrunner/fnruntime/pkg/fnproxy/grpcserver"
 	"github.com/fnrunner/fnruntime/pkg/fnproxy/healthhandler"
 	"github.com/fnrunner/fnruntime/pkg/fnproxy/servicehandler"
+	"github.com/fnrunner/fnruntime/pkg/store/ctrlstore"
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type Config struct {
-	Clientset      *kubernetes.Clientset
-	FnWrapperImage string
-	Images         []*fnrunv1alpha1.Image
-	ConfigMap      *corev1.ConfigMap
+	ControllerStore ctrlstore.Store
+	//Clientset      *kubernetes.Clientset
+	//FnWrapperImage string
+	//Images         []*fnrunv1alpha1.Image
+	//ConfigMap      *corev1.ConfigMap
 }
 
-type FnProxy interface {
+type Proxy interface {
 	Start(ctx context.Context) error
 	Stop(ctx context.Context)
 	//CreatePod(ctx context.Context, image fnrunv1alpha1.Image) error
 	//DeletePod(ctx context.Context, image fnrunv1alpha1.Image) error
 }
 
-func New(cfg *Config) FnProxy {
-	l := ctrl.Log.WithName("imageproxy")
+func New(cfg *Config) Proxy {
+	l := ctrl.Log.WithName("fn proxy")
 
-	namespace := os.Getenv("POD_NAMESPACE")
-	if namespace == "" {
-		namespace = "default"
-	}
+	/*
+		namespace := os.Getenv("POD_NAMESPACE")
+		if namespace == "" {
+			namespace = "default"
+		}
 
-	fnWrapperImage := os.Getenv(fnrunv1alpha1.EnvFnWrapperImage)
-	if fnWrapperImage == "" {
-		fnWrapperImage = fnrunv1alpha1.DefaultFnWrapperImage
-	}
+		fnWrapperImage := os.Getenv(fnrunv1alpha1.EnvFnWrapperImage)
+		if fnWrapperImage == "" {
+			fnWrapperImage = fnrunv1alpha1.DefaultFnWrapperImage
+		}
+	*/
 
-	c := cache.NewCache(cfg.Clientset)
-	for _, image := range cfg.Images {
-		c.Create(*image)
-		// since we created the image here we dont have to validate the error
-		// when setting the configmap
-		c.SetConfigMap(*image, cfg.ConfigMap)
-	}
+	/*
+		c := cache.NewCache(cfg.Clientset)
+		for _, image := range cfg.Images {
+			c.Create(*image)
+			// since we created the image here we dont have to validate the error
+			// when setting the configmap
+			c.SetConfigMap(*image, cfg.ConfigMap)
+		}
+	*/
 
 	hh := healthhandler.New()
-	sh := servicehandler.New(c)
-	eh := exechandler.New(c)
+	sh := servicehandler.New(cfg.ControllerStore)
+	eh := exechandler.New(cfg.ControllerStore)
 
 	s := grpcserver.New(grpcserver.Config{
 		Address:  fmt.Sprintf(":%d", fnrunv1alpha1.FnProxyGRPCServerPort),
@@ -84,35 +86,35 @@ func New(cfg *Config) FnProxy {
 	)
 
 	return &proxy{
-		s:              s,
-		clientset:      cfg.Clientset,
-		namespace:      namespace,
-		fnWrapperImage: fnWrapperImage,
-		cache:          c,
-		l:              l,
-		cm:             cfg.ConfigMap,
+		s: s,
+		//clientset:      cfg.Clientset,
+		//namespace:      namespace,
+		//fnWrapperImage: fnWrapperImage,
+		ctrlStore: cfg.ControllerStore,
+		l:         l,
+		//cm:             cfg.ConfigMap,
 	}
 }
 
 type proxy struct {
-	s              *grpcserver.GrpcServer
-	clientset      *kubernetes.Clientset
-	namespace      string
-	fnWrapperImage string
-	cache          cache.Cache
-	l              logr.Logger
-	cm             *corev1.ConfigMap
-	cancel         context.CancelFunc
+	s *grpcserver.GrpcServer
+	//clientset      *kubernetes.Clientset
+	//namespace      string
+	//fnWrapperImage string
+	ctrlStore ctrlstore.Store
+	l         logr.Logger
+	//cm             *corev1.ConfigMap
+	cancel context.CancelFunc
 }
 
 func (r *proxy) Stop(ctx context.Context) {
 	// delete pods/svcs -> happens through ownerreference
 	/*
-	for _, image := range r.cache.List() {
-		if err := r.cache.Stop(ctx, image); err != nil {
-			return err
+		for _, image := range r.cache.List() {
+			if err := r.cache.Stop(ctx, image); err != nil {
+				return err
+			}
 		}
-	}
 	*/
 	// stop grpc and imager controller servers
 	r.cancel()
@@ -122,20 +124,21 @@ func (r *proxy) Stop(ctx context.Context) {
 func (r *proxy) Start(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
-	go func() {
-		if err := r.s.Start(ctx); err != nil {
-			r.l.Error(err, "cannot start grpcserver")
-			//return err
-		}
-	}()
+
+	if err := r.s.Start(ctx); err != nil {
+		r.l.Error(err, "cannot start grpcserver")
+		return err
+	}
 
 	// create pods/svc
-	for _, image := range r.cache.List() {
-		if err := r.cache.Start(ctx, image); err != nil {
-			r.l.Error(err, "cannot start image controller")
-			return err
+	/*
+		for _, image := range r.cache.List() {
+			if err := r.cache.Start(ctx, image); err != nil {
+				r.l.Error(err, "cannot start image controller")
+				return err
+			}
 		}
-	}
+	*/
 
 	return nil
 }
