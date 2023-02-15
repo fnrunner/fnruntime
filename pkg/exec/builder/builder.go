@@ -17,28 +17,29 @@ limitations under the License.
 package builder
 
 import (
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/exechandler"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap/functions"
 	"github.com/fnrunner/fnruntime/pkg/exec/output"
 	"github.com/fnrunner/fnruntime/pkg/exec/result"
 	"github.com/fnrunner/fnruntime/pkg/exec/rtdag"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnutils/pkg/executor"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Config struct {
-	Name      string
-	Namespace string
-	Data      any
-	Client    client.Client
-	GVK       *schema.GroupVersionKind
-	DAG       rtdag.RuntimeDAG
-	Output    output.Output
-	Result    result.Result
-	FnClients *clients.Clients
+	Name           string
+	Namespace      string
+	ControllerName string
+	Data           any
+	Client         client.Client
+	GVK            *schema.GroupVersionKind
+	DAG            rtdag.RuntimeDAG
+	Output         output.Output
+	Result         result.Result
+	FnClients      *clients.Clients
 }
 
 func New(c *Config) executor.Executor {
@@ -53,6 +54,7 @@ func New(c *Config) executor.Executor {
 		Output:         c.Output,
 		Result:         c.Result,
 		FnClients:      c.FnClients,
+		ControllerName: c.ControllerName,
 	})
 
 	// Initialize the initial data

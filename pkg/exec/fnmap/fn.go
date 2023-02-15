@@ -19,11 +19,11 @@ package fnmap
 import (
 	"context"
 
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/input"
 	"github.com/fnrunner/fnruntime/pkg/exec/output"
 	"github.com/fnrunner/fnruntime/pkg/exec/result"
 	"github.com/fnrunner/fnruntime/pkg/exec/rtdag"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -37,6 +37,7 @@ type Function interface {
 	WithFnMap(fnMap FuncMap)
 	WithRootVertexName(name string)
 	WithFnClients(*clients.Clients)
+	WithControllerName(name string)
 	Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error)
 }
 
@@ -81,5 +82,11 @@ func WithRootVertexName(name string) FunctionOption {
 func WithFnClients(fnc *clients.Clients) FunctionOption {
 	return func(r Function) {
 		r.WithFnClients(fnc)
+	}
+}
+
+func WithControllerName(name string) FunctionOption {
+	return func(r Function) {
+		r.WithControllerName(name)
 	}
 }

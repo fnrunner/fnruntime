@@ -70,6 +70,7 @@ type kv struct {
 	// fec exec config
 	fec *fnExecConfig
 	// init config
+	controllerName string
 	// runtime config
 	outputs output.Output
 	key     string
@@ -100,6 +101,10 @@ func (r *kv) WithClient(client client.Client) {}
 func (r *kv) WithFnMap(fnMap fnmap.FuncMap) {}
 
 func (r *kv) WithFnClients(fnc *clients.Clients) {}
+
+func (r *kv) WithControllerName(name string) {
+	r.controllerName = name
+}
 
 func (r *kv) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error) {
 	r.l.Info("run", "vertexName", vertexContext.VertexName, "input", i.Get(), "key", vertexContext.Function.Input.Key, "value", vertexContext.Function.Input.Value)

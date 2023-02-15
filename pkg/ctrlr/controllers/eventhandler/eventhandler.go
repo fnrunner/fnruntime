@@ -36,6 +36,7 @@ import (
 )
 
 type Config struct {
+	ControllerName string
 	Client         client.Client
 	RootVertexName string
 	GVK            *schema.GroupVersionKind
@@ -52,6 +53,7 @@ func New(c *Config) handler.EventHandler {
 
 	return &eventhandler{
 		//ctx:    ctx,
+		controllerName: c.ControllerName,
 		client:         c.Client,
 		rootVertexName: c.RootVertexName,
 		gvk:            c.GVK,
@@ -61,7 +63,8 @@ func New(c *Config) handler.EventHandler {
 }
 
 type eventhandler struct {
-	client client.Client
+	controllerName string
+	client         client.Client
 	//ctx    context.Context
 	rootVertexName string
 	gvk            *schema.GroupVersionKind
@@ -112,14 +115,15 @@ func (r *eventhandler) add(obj runtime.Object, queue adder) {
 	o := output.New()
 	result := result.New()
 	e := builder.New(&builder.Config{
-		Name:      u.GetName(),
-		Namespace: namespace,
-		Data:      x,
-		Client:    r.client,
-		GVK:       r.gvk,
-		DAG:       r.d,
-		Output:    o,
-		Result:    result,
+		Name:           u.GetName(),
+		Namespace:      namespace,
+		ControllerName: r.controllerName,
+		Data:           x,
+		Client:         r.client,
+		GVK:            r.gvk,
+		DAG:            r.d,
+		Output:         o,
+		Result:         result,
 	})
 
 	e.Run(context.TODO())

@@ -61,6 +61,7 @@ type gt struct {
 	// fec exec config
 	fec *fnExecConfig
 	// init config
+	controllerName string
 	// runtime config
 	outputs  output.Output
 	template string
@@ -90,6 +91,10 @@ func (r *gt) WithClient(client client.Client) {}
 func (r *gt) WithFnMap(fnMap fnmap.FuncMap) {}
 
 func (r *gt) WithFnClients(fnc *clients.Clients) {}
+
+func (r *gt) WithControllerName(name string) {
+	r.controllerName = name
+}
 
 func (r *gt) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error) {
 	r.l.Info("run", "vertexName", vertexContext.VertexName, "input", i.Get(), "resource", vertexContext.Function.Input.Resource.Raw)

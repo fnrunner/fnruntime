@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/input"
 	"github.com/fnrunner/fnruntime/pkg/exec/output"
 	"github.com/fnrunner/fnruntime/pkg/exec/result"
 	"github.com/fnrunner/fnruntime/pkg/exec/rtdag"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -41,6 +41,7 @@ type Config struct {
 	Name           string
 	Namespace      string
 	RootVertexName string
+	ControllerName string
 	Client         client.Client
 	Output         output.Output
 	Result         result.Result
@@ -82,12 +83,15 @@ func (r *fnMap) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i i
 		fn.WithOutput(r.cfg.Output)
 		fn.WithResult(r.cfg.Result)
 		fn.WithFnMap(r)
+		fn.WithControllerName(r.cfg.ControllerName)
 	case ctrlcfgv1alpha1.QueryType:
 		fn.WithClient(r.cfg.Client)
+		fn.WithControllerName(r.cfg.ControllerName)
 	case ctrlcfgv1alpha1.ContainerType, ctrlcfgv1alpha1.WasmType:
 		fn.WithNameAndNamespace(r.cfg.Name, r.cfg.Namespace)
 		fn.WithRootVertexName(r.cfg.RootVertexName)
 		fn.WithFnClients(r.cfg.FnClients)
+		fn.WithControllerName(r.cfg.ControllerName)
 	}
 	// run the function
 	return fn.Run(ctx, vertexContext, i)

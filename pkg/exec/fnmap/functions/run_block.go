@@ -59,6 +59,7 @@ type block struct {
 	// fec exec config
 	fec *fnExecConfig
 	// init config
+	controllerName string
 	curOutputs output.Output // this is the current output list
 	curResults result.Result
 	fnMap      fnmap.FuncMap
@@ -96,6 +97,10 @@ func (r *block) WithFnMap(fnMap fnmap.FuncMap) {
 }
 
 func (r *block) WithFnClients(fnc *clients.Clients) {}
+
+func (r *block) WithControllerName(name string) {
+	r.controllerName = name
+}
 
 func (r *block) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error) {
 	r.l.Info("run", "vertexName", vertexContext.VertexName, "input", i.Get())

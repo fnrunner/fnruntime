@@ -70,8 +70,10 @@ func (r *fnctrlmgr) Start(ctx context.Context) error {
 			ControllerStore: r.ctrlStore,
 			Client:          r.client,
 			Reconciler: fnctrlrreconciler.New(&fnctrlrreconciler.Config{
-				Client: r.client,
-				Mgr:    r.mgr,
+				Client:          r.client,
+				Mgr:             r.mgr,
+				ControllerStore: r.ctrlStore,
+				Name:            controllerName,
 			}),
 		})
 

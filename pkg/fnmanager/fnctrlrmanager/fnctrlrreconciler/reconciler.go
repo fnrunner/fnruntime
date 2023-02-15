@@ -23,7 +23,7 @@ import (
 
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
 	"github.com/fnrunner/fnruntime/pkg/ctrlr/controllers/reconciler"
-	"github.com/fnrunner/fnruntime/pkg/ctrlr/fncontroller"
+	"github.com/fnrunner/fnruntime/pkg/ctrlr/fnexeccontroller"
 	"github.com/fnrunner/fnruntime/pkg/fnmanager/fnreconciler"
 	"github.com/fnrunner/fnruntime/pkg/imgmanager/imgmanager"
 	"github.com/fnrunner/fnruntime/pkg/store/ctrlstore"
@@ -31,7 +31,6 @@ import (
 	"github.com/fnrunner/fnsyntax/pkg/ccsyntax"
 	"github.com/fnrunner/fnutils/pkg/meta"
 	"github.com/go-logr/logr"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -50,6 +50,7 @@ const (
 )
 
 type Config struct {
+	Name            string // controllerName
 	Client          *kubernetes.Clientset
 	Mgr             manager.Manager
 	ControllerStore ctrlstore.Store
@@ -61,6 +62,7 @@ func New(cfg *Config) fnreconciler.Reconciler {
 		client:    cfg.Client,
 		ctrlStore: cfg.ControllerStore,
 		mgr:       cfg.Mgr,
+		key:       defaultConfigMapKey,
 		ge:        make(chan event.GenericEvent),
 		l:         l,
 	}
@@ -70,7 +72,7 @@ type rec struct {
 	client    *kubernetes.Clientset
 	ctrlStore ctrlstore.Store
 	mgr       manager.Manager
-	fnc       fncontroller.Controller
+	fne       fnexeccontroller.Controller
 	fni       imgmanager.Manager
 	key       string
 	ge        chan event.GenericEvent
@@ -79,7 +81,6 @@ type rec struct {
 }
 
 func (r *rec) Reconcile(ctx context.Context, key types.NamespacedName) (bool, error) {
-
 	r.l.WithValues("key", key)
 
 	cm, err := r.client.CoreV1().ConfigMaps(key.Namespace).Get(ctx, key.Name, metav1.GetOptions{})
@@ -99,8 +100,8 @@ func (r *rec) Reconcile(ctx context.Context, key types.NamespacedName) (bool, er
 		if r.fni != nil {
 			r.fni.Stop()
 		}
-		if r.fnc != nil {
-			r.fnc.Stop(ctx)
+		if r.fne != nil {
+			r.fne.Stop(ctx)
 		}
 		meta.RemoveFinalizer(cm, finalizer)
 		if _, err := r.client.CoreV1().ConfigMaps(key.Namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
@@ -113,8 +114,8 @@ func (r *rec) Reconcile(ctx context.Context, key types.NamespacedName) (bool, er
 	// action is either ignote
 	action := r.checkAction(cm)
 	if action == Ignore {
-		// if the fncontroller is running all ok, if not we need to run it
-		if r.fnc != nil && r.fnc.IsRunning() {
+		// if the fnexeccontroller is running all ok, if not we need to run it
+		if r.fne != nil && r.fne.IsRunning() {
 			r.l.Info("configmap update -> ignore controller update...")
 			if _, err := r.client.CoreV1().ConfigMaps(key.Namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 				r.l.Error(err, "cannot update resource")
@@ -137,10 +138,11 @@ func (r *rec) Reconcile(ctx context.Context, key types.NamespacedName) (bool, er
 		if r.fni != nil {
 			r.fni.Stop()
 		}
-		if r.fnc != nil {
-			r.fnc.Stop(ctx)
+		if r.fne != nil {
+			r.fne.Stop(ctx)
 		}
 	}
+	r.l.Info("images", "imageInfo", images)
 	// create the fn image manager
 	r.fni, err = imgmanager.New(&imgmanager.Config{
 		ControllerStore: r.ctrlStore,
@@ -154,23 +156,24 @@ func (r *rec) Reconcile(ctx context.Context, key types.NamespacedName) (bool, er
 		r.l.Error(err, "cannot create img manager")
 		return false, err
 	}
+	r.l.Info("start fnimg manager...")
 	if err := r.fni.Start(ctx); err != nil {
-		r.l.Error(err, "cannot start fn proxy")
+		r.l.Error(err, "cannot start fnimg manager")
 		return false, err
 	}
 
 	// create the controller
-	r.fnc = fncontroller.New(r.mgr, ceCtx, r.ge)
+	r.fne = fnexeccontroller.New(r.mgr, ceCtx, r.ge)
 	// start the controller
-	r.l.Info("start controller...")
-	if err := r.fnc.Start(ctx, cm.Name, controller.Options{
+	r.l.Info("start fnexec controller...")
+	if err := r.fne.Start(ctx, cm.Name, controller.Options{
 		Reconciler: reconciler.New(&reconciler.Config{
 			Client:       r.mgr.GetClient(),
 			PollInterval: 1 * time.Minute,
 			CeCtx:        ceCtx,
 		}),
 	}); err != nil {
-		r.l.Error(err, "cannot start controller")
+		r.l.Error(err, "cannot start fnexec controller")
 		return false, err
 	}
 
@@ -193,7 +196,7 @@ func (r *rec) getExecCtxAndImages(cm *corev1.ConfigMap) ([]*fnrunv1alpha1.Image,
 		return nil, nil, err
 	}
 
-	p, result := ccsyntax.NewParser(ctrlcfg)
+	p, result := ccsyntax.NewParser(cm.GetName(), ctrlcfg)
 	if len(result) > 0 {
 		err := fmt.Errorf("failed ccsyntax validation, result %v", result)
 		r.l.Error(err, "syntax validation faile")

@@ -25,7 +25,7 @@ import (
 )
 
 func (r *subServer) ApplyResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*servicepb.FunctionServiceResponse, error) {
-	r.l.Info("service apply", "req", req)
+	r.l.Info("service apply", "image", req.Image, "controllerName", req.GetController())
 
 	imageStore := r.ctrlStore.GetImageStore(req.GetController())
 	if imageStore == nil {
@@ -40,7 +40,7 @@ func (r *subServer) ApplyResource(ctx context.Context, req *servicepb.FunctionSe
 }
 
 func (r *subServer) DeleteResource(ctx context.Context, req *servicepb.FunctionServiceRequest) (*emptypb.Empty, error) {
-	r.l.Info("service delete", "req", req)
+	r.l.Info("service delete", "image", req.Image, "controllerName", req.GetController())
 
 	imageStore := r.ctrlStore.GetImageStore(req.GetController())
 	if imageStore == nil {

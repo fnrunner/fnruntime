@@ -61,6 +61,7 @@ type query struct {
 	// fec exec config
 	fec *fnExecConfig
 	// init config
+	controllerName string
 	client client.Client
 	// runtime config
 	outputs  output.Output
@@ -93,6 +94,10 @@ func (r *query) WithClient(client client.Client) {
 func (r *query) WithFnMap(fnMap fnmap.FuncMap) {}
 
 func (r *query) WithFnClients(fnc *clients.Clients) {}
+
+func (r *query) WithControllerName(name string) {
+	r.controllerName = name
+}
 
 func (r *query) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error) {
 	r.l.Info("run", "vertexName", vertexContext.VertexName, "input", i.Get(), "resource", vertexContext.Function.Input.Resource)

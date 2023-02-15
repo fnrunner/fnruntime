@@ -23,12 +23,12 @@ import (
 	"sync"
 
 	"github.com/fnrunner/fnproto/pkg/executor/executorpb"
-	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnruntime/pkg/exec/fnmap"
 	"github.com/fnrunner/fnruntime/pkg/exec/input"
 	"github.com/fnrunner/fnruntime/pkg/exec/output"
 	"github.com/fnrunner/fnruntime/pkg/exec/result"
 	"github.com/fnrunner/fnruntime/pkg/exec/rtdag"
+	"github.com/fnrunner/fnruntime/pkg/fnproxy/clients"
 	"github.com/fnrunner/fnsdk/go/fn"
 	ctrlcfgv1alpha1 "github.com/fnrunner/fnsyntax/apis/controllerconfig/v1alpha1"
 	"github.com/go-logr/logr"
@@ -67,6 +67,7 @@ type image struct {
 	name           string
 	namespace      string
 	rootVertexName string
+	controllerName string
 	// runtime config
 	fnconfig     ctrlcfgv1alpha1.Function
 	outputs      output.Output
@@ -106,6 +107,10 @@ func (r *image) WithFnMap(fnMap fnmap.FuncMap) {}
 
 func (r *image) WithFnClients(fnc *clients.Clients) {
 	r.clients = fnc
+}
+
+func (r *image) WithControllerName(name string) {
+	r.controllerName = name
 }
 
 func (r *image) initOutput(numItems int) {
@@ -152,6 +157,7 @@ func (r *image) run(ctx context.Context, i input.Input) (any, error) {
 	resp, err := r.clients.Execclient.Get().ExecuteFunction(ctx, &executorpb.ExecuteFunctionRequest{
 		ResourceContext: rCtx,
 		Image:           r.fnconfig.Image,
+		Controller:      r.controllerName,
 	})
 	if err != nil {
 		r.l.Error(err, "cannot execute function")

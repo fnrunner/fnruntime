@@ -138,6 +138,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		e := builder.New(&builder.Config{
 			Name:      req.Name,
 			Namespace: req.Namespace,
+			ControllerName: r.ceCtx.GetName(),
 			Data:      x,
 			Client:    r.client,
 			GVK:       gvk,
@@ -171,6 +172,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	e := builder.New(&builder.Config{
 		Name:      req.Name,
 		Namespace: req.Namespace,
+		ControllerName: r.ceCtx.GetName(),
 		Data:      x,
 		Client:    r.client,
 		GVK:       gvk,

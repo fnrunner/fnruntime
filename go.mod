@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/fnrunner/fnproto v0.0.0-20230214193737-2a01f4983076
 	github.com/fnrunner/fnsdk v0.0.0-20230205112911-74f0d46d2b9a
-	github.com/fnrunner/fnsyntax v0.0.0-20230212083811-b55b1c29054d
+	github.com/fnrunner/fnsyntax v0.0.0-20230215075950-42de54042392
 	github.com/fnrunner/fnutils v0.0.0-20230213165238-7cd0a217cf39
 	github.com/go-logr/logr v1.2.3
 	github.com/google/go-containerregistry v0.13.0
@@ -18,7 +18,6 @@ require (
 	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
-	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.26.1
@@ -91,6 +90,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230202175211-008b39050e57 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.1 // indirect
 	k8s.io/component-base v0.26.1 // indirect

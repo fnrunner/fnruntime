@@ -9,13 +9,20 @@ import (
 	fnrunv1alpha1 "github.com/fnrunner/fnruntime/apis/fnrun/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	coreapplyv1 "k8s.io/client-go/applyconfigurations/core/v1"
 	metaapplyv1 "k8s.io/client-go/applyconfigurations/meta/v1"
 )
 
 func (r *controller) applyPod(ctx context.Context, podName string) (*corev1.Pod, error) {
+	r.l.Info("apply pod", "podName", podName)
 	// apply pod
-	pod, err := r.client.CoreV1().Pods(r.namespace).Apply(ctx, r.buildPod(r.image, podName), metav1.ApplyOptions{FieldManager: "application/apply-patch"})
+	p, err := r.buildPod(r.image, podName)
+	if err != nil {
+		return nil, err
+	}
+
+	pod, err := r.client.CoreV1().Pods(r.namespace).Apply(ctx, p, metav1.ApplyOptions{FieldManager: "application/apply-patch"})
 	if err != nil {
 		return nil, err
 	}
@@ -23,18 +30,22 @@ func (r *controller) applyPod(ctx context.Context, podName string) (*corev1.Pod,
 	pod, err = r.client.CoreV1().Pods(r.namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		r.deleteClientFn(r.image)
+		r.l.Info("pod client deleted", "podName", podName, "image", r.image.Name)
 		return nil, err
 	}
 	if pod.Status.Phase != "Running" {
 		r.deleteClientFn(r.image)
+		r.l.Info("pod client deleted", "podName", podName, "image", r.image.Name)
 		return pod, nil
 	}
 	for _, cond := range pod.Status.Conditions {
 		if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
+			r.l.Info("pod client created", "podName", podName, "image", r.image.Name, "IP", pod.Status.PodIP)
 			r.createClientFn(r.image, podName, pod.Status.PodIP)
 			return pod, nil
 		}
 		r.deleteClientFn(r.image)
+		r.l.Info("pod client deleted", "podName", podName, "image", r.image.Name)
 	}
 	return pod, nil
 }
@@ -44,7 +55,7 @@ func (r *controller) deletePod(ctx context.Context, podName string) error {
 	return r.client.CoreV1().Pods(r.namespace).Delete(ctx, podName, metav1.DeleteOptions{})
 }
 
-func (r *controller) buildPod(image fnrunv1alpha1.Image, podName string) *coreapplyv1.PodApplyConfiguration {
+func (r *controller) buildPod(image fnrunv1alpha1.Image, podName string) (*coreapplyv1.PodApplyConfiguration, error) {
 	pod := &coreapplyv1.PodApplyConfiguration{}
 	pod.WithAPIVersion("v1")
 	pod.WithKind("Pod")
@@ -53,6 +64,8 @@ func (r *controller) buildPod(image fnrunv1alpha1.Image, podName string) *coreap
 	pod.WithLabels(map[string]string{
 		fnrunv1alpha1.FunctionLabelKey: podName,
 	})
+
+	r.l.Info("buildPod configmap info", "key", types.NamespacedName{Namespace: r.cm.GetNamespace(), Name: r.cm.GetName()}, "uid", r.cm.GetUID())
 
 	ownerRef := &metaapplyv1.OwnerReferenceApplyConfiguration{}
 	ownerRef.WithAPIVersion("v1")
@@ -110,7 +123,7 @@ func (r *controller) buildPod(image fnrunv1alpha1.Image, podName string) *coreap
 		podSpec.WithVolumes(volume)
 
 		pod.WithSpec(podSpec)
-		return pod
+		return pod, nil
 	case fnrunv1alpha1.ImageKindService:
 		// container
 		cmd := r.de.GetEntrypoint()
@@ -125,11 +138,11 @@ func (r *controller) buildPod(image fnrunv1alpha1.Image, podName string) *coreap
 		podSpec.WithContainers(container)
 
 		pod.WithSpec(podSpec)
-		return pod
+		return pod, nil
 	default:
 		err := fmt.Errorf("cannot build pod with unknown image kind, got: %s", image.Kind)
 		r.l.Error(err, "unknown image kind")
-		return &coreapplyv1.PodApplyConfiguration{}
+		return nil, err
 	}
 }
 

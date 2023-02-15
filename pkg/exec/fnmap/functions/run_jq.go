@@ -56,6 +56,7 @@ type jq struct {
 	// fec exec config
 	fec *fnExecConfig
 	// init config
+	controllerName string
 	// runtime config
 	outputs    output.Output
 	expression string
@@ -84,6 +85,10 @@ func (r *jq) WithClient(client client.Client) {}
 func (r *jq) WithFnMap(fnMap fnmap.FuncMap) {}
 
 func (r *jq) WithFnClients(fnc *clients.Clients) {}
+
+func (r *jq) WithControllerName(name string) {
+	r.controllerName = name
+}
 
 func (r *jq) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error) {
 	r.l.Info("run", "vertexName", vertexContext.VertexName, "input", i.Get(), "expression", vertexContext.Function.Input.Expression)

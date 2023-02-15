@@ -51,9 +51,9 @@ func New(cfg *Config) Controller {
 	}
 
 	return &controller{
-		client:    cfg.Client,
-		namespace: cfg.Namespace,
-		//image:          cfg.Image,
+		client:         cfg.Client,
+		namespace:      cfg.Namespace,
+		image:          cfg.Image,
 		fnWrapperImage: fnWrapperImage,
 		cm:             cfg.ConfigMap,
 		l:              l,
@@ -155,7 +155,7 @@ func (r *controller) start(ctx context.Context, podName string) error {
 				r.l.Error(err, "cannot watch pod channel")
 				return err
 			}
-			r.l.Info("pod event", "event", we)
+			//r.l.Info("pod event", "event", we)
 			if _, err := r.applyPod(ctx, podName); err != nil {
 				r.l.Error(err, "cannot apply")
 			}
@@ -165,7 +165,7 @@ func (r *controller) start(ctx context.Context, podName string) error {
 				r.l.Error(err, "cannot watch svc channel")
 				return err
 			}
-			r.l.Info("service event", "event", we)
+			//r.l.Info("service event", "event", we)
 			if _, err := r.applyService(ctx, podName); err != nil {
 				r.l.Error(err, "cannot apply")
 			}

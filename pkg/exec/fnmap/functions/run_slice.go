@@ -59,6 +59,7 @@ type slice struct {
 	// fec exec config
 	fec *fnExecConfig
 	// init config
+	controllerName string
 	// runtime config
 	outputs output.Output
 	value   string
@@ -88,6 +89,10 @@ func (r *slice) WithClient(client client.Client) {}
 func (r *slice) WithFnMap(fnMap fnmap.FuncMap) {}
 
 func (r *slice) WithFnClients(fnc *clients.Clients) {}
+
+func (r *slice) WithControllerName(name string) {
+	r.controllerName = name
+}
 
 func (r *slice) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error) {
 	r.l.Info("run", "vertexName", vertexContext.VertexName, "input", i.Get(), "expression", r.value)

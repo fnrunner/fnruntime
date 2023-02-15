@@ -24,7 +24,7 @@ import (
 )
 
 func (r *subServer) ExecuteFuntion(ctx context.Context, req *executorpb.ExecuteFunctionRequest) (*executorpb.ExecuteFunctionResponse, error) {
-	r.l.Info("execute function", "image", req.Image)
+	r.l.Info("execute function", "image", req.Image, "controllerName", req.GetController())
 
 	imageStore := r.ctrlStore.GetImageStore(req.GetController())
 	if imageStore == nil {

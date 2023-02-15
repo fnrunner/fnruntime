@@ -155,9 +155,9 @@ func (r *fnctrlctrlr) get(ctx context.Context) (*corev1.ConfigMap, error) {
 	cm, err := r.client.CoreV1().ConfigMaps(r.namespace).Get(ctx, r.name, metav1.GetOptions{})
 	if err != nil {
 		if meta.IgnoreNotFound(err) == nil {
-			r.l.Info("configmap not found")
+			r.l.Info("configmap not found", "key", types.NamespacedName{Namespace: r.namespace, Name: r.name})
 		} else {
-			r.l.Error(err, "cannot get configmap")
+			r.l.Error(err, "cannot get configmap", "key", types.NamespacedName{Namespace: r.namespace, Name: r.name})
 		}
 		return nil, err
 	}

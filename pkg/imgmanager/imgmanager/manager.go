@@ -84,6 +84,7 @@ func (r *imgmgr) Start(ctx context.Context) error {
 		return fmt.Errorf("cannot create img manager, respective controller not initialized in store")
 	}
 	for _, image := range imageStore.List() {
+		r.l.Info("imgmr start", "imageInfo", image)
 		de, err := getImageDigestAndEntrypoint(ctx, image.Name)
 		if err != nil {
 			return err
@@ -95,6 +96,8 @@ func (r *imgmgr) Start(ctx context.Context) error {
 		}
 
 		imgc := imgcontroller.New(&imgcontroller.Config{
+			Namespace:      r.namespace,
+			ControllerName: r.controllerName,
 			Client:         r.client,
 			Image:          image,
 			PodName:        podName,
@@ -105,22 +108,30 @@ func (r *imgmgr) Start(ctx context.Context) error {
 		})
 		go func() {
 			if err := imgc.Start(ctx); err != nil {
-				r.errChan <- err
+				r.l.Error(err, "cannot start/crash img controller")
 			}
+			// cancel the controllers
+			r.cancel()
 		}()
 	}
-	for {
-		select {
-		case <-ctx.Done():
-			// We are done
-			return nil
-		case err := <-r.errChan:
-			// Error starting or during start
-			return err
+	/*
+		for {
+			select {
+			case <-ctx.Done():
+				// We are done
+				return nil
+			case err := <-r.errChan:
+				// Error starting or during start
+				return err
+			}
 		}
-	}
+	*/
+	return nil
 }
 
 func (r *imgmgr) Stop() {
-	r.cancel()
+	if r.cancel != nil {
+		r.cancel()
+		r.cancel = nil
+	}
 }

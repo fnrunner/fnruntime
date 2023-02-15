@@ -51,6 +51,8 @@ func NewRootFn() fnmap.Function {
 type root struct {
 	// fec exec config
 	fec *fnExecConfig
+	// init config
+	controllerName string
 	// logging
 	l logr.Logger
 }
@@ -74,6 +76,10 @@ func (r *root) WithClient(client client.Client) {}
 func (r *root) WithFnMap(fnMap fnmap.FuncMap) {}
 
 func (r *root) WithFnClients(fnc *clients.Clients) {}
+
+func (r *root) WithControllerName(name string) {
+	r.controllerName = name
+}
 
 func (r *root) Run(ctx context.Context, vertexContext *rtdag.VertexContext, i input.Input) (output.Output, error) {
 	// Here we prepare the input we get from the runtime
