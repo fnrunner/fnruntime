@@ -93,7 +93,7 @@ func (r *fnctrlctrlr) Start(ctx context.Context) error {
 				goto INIT
 			}
 			// we add a label so the watch can use a label selector
-			cm, err = r.update(ctx, cm)
+			_, err = r.update(ctx, cm)
 			if err != nil {
 				//r.l.Error(err, "cannot update cm")
 				time.Sleep(defaultWaitTime)

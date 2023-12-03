@@ -30,16 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-/*
-const (
-	fnImage  = "europe-docker.pkg.dev/srlinux/eu.gcr.io/fn-fabric-image:latest"
-	svcImage = "europe-docker.pkg.dev/srlinux/eu.gcr.io/ipam-injector-service-image:latest"
-)
-*/
-
-// const yamlFile = "./examples/upf.yaml"
-const yamlFile = "./examples/topo4.yaml"
-
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -50,7 +40,7 @@ func main() {
 	var pollInterval time.Duration
 	var domain string
 	var uniqueID string
-	var configMap string
+	//var configMap string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -62,7 +52,7 @@ func main() {
 	flag.BoolVar(&profiler, "profile", false, "Enable profiler")
 	flag.StringVar(&domain, "domain", fnrunv1alpha1.Domain, "The domain the operator belongs to")
 	flag.StringVar(&uniqueID, "unique-id", "abcd1234", "The unique id used in leader election")
-	flag.StringVar(&configMap, "configMap", "configmap", "The configmap the controller uses")
+	//flag.StringVar(&configMap, "configMap", "configmap", "The configmap the controller uses")
 	opts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.ISO8601TimeEncoder,
@@ -72,6 +62,15 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 	l := ctrl.Log.WithName("fn manager")
+
+	configMaps := []string{}
+	for _, flag := range flag.Args() {
+		if string(flag[0:1]) == "-" {
+			break
+		}
+		configMaps = append(configMaps, flag)
+	}
+	l.Info("configmaps", "configmaps", configMaps)
 
 	if profiler {
 		defer profile.Start().Stop()
@@ -85,7 +84,7 @@ func main() {
 	mgr, err := fnmanager.New(&fnmanager.Config{
 		Domain:               domain,
 		UniqueID:             uniqueID,
-		ConfigMaps:           []string{configMap},
+		ConfigMaps:           configMaps,
 		MetricAddress:        metricsAddr,
 		ProbeAddress:         probeAddr,
 		EnableLeaderElection: enableLeaderElection,

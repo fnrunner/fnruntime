@@ -73,7 +73,7 @@ func (r *fnExecConfig) exec(ctx context.Context, fnconfig ctrlcfgv1alpha1.Functi
 			if exp := fnconfig.Block.Condition.Expression; exp != "" {
 				ok, err = runCondition(exp, i)
 				if err != nil {
-					r.l.Error(err, "cannot run range")
+					r.l.Error(err, "cannot run condition")
 					return nil, err
 				}
 				if !ok {
